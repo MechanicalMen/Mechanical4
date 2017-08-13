@@ -84,9 +84,9 @@ namespace Mechanical4.EventQueue
         #region Public Members
 
         /// <summary>
-        /// Gets a value indicating whether the background <see cref="Task"/> has finished yet.
+        /// Gets the task doing the event processing.
         /// </summary>
-        public bool IsRunning => this.task.Status == TaskStatus.Running;
+        public Task Task => this.task;
 
         /// <summary>
         /// Enqueues an <see cref="EventQueueClosingEvent"/>.
