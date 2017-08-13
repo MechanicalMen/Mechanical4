@@ -33,13 +33,16 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="nunit.framework, Version=3.7.1.0, Culture=neutral, PublicKeyToken=2638cd05610744eb, processorArchitecture=MSIL">
       <HintPath>..\packages\NUnit.3.7.1\lib\net45\nunit.framework.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.ValueTuple, Version=4.0.1.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.ValueTuple.4.3.1\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
+    <Reference Include="System.ValueTuple, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.ValueTuple.4.4.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
     </Reference>
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -53,19 +56,34 @@
     <Compile Include="Core\ExcTests.cs" />
     <Compile Include="Core\DisposableTests.cs" />
     <Compile Include="Core\Misc\CommonStringConverterTests.cs" />
+    <Compile Include="EventQueue\BlockingEnqueueExtensionTests.cs" />
+    <Compile Include="EventQueue\EventSubscriberCollectionTests.cs" />
+    <Compile Include="EventQueue\ManualEventQueueTests.cs" />
+    <Compile Include="EventQueue\Serialization\BinaryEventStreamTests.cs" />
+    <Compile Include="EventQueue\Serialization\EventQueueSerializationTests.cs" />
+    <Compile Include="EventQueue\Serialization\JsonEventStreamTests.cs" />
+    <Compile Include="EventQueue\Serialization\VariableLengthUIntTests.cs" />
+    <Compile Include="EventQueue\TaskEventQueueTests.cs" />
+    <Compile Include="EventQueue\TestEvent.cs" />
+    <Compile Include="EventQueue\TestEventHandler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
     <ProjectReference Include="..\Mechanical4.Core\Mechanical4.Core.csproj">
       <Project>{877914d9-9ebd-4844-838a-f8dc0c7a9eb2}</Project>
       <Name>Mechanical4.Core</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
+    <ProjectReference Include="..\Mechanical4.EventQueue\Mechanical4.EventQueue.csproj">
+      <Project>{69642fcc-41b1-4996-b502-ad73a5db84da}</Project>
+      <Name>Mechanical4.EventQueue</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
