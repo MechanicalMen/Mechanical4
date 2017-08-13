@@ -8,7 +8,7 @@ namespace Mechanical4.EventQueue.Tests
     public static class EventSubscriberCollectionTests
     {
         [Test]
-        public static void AddRemoveSubscriberTest()
+        public static void AddRemoveSubscriberInstance()
         {
             var subscriber = new TestEventHandler();
             var collection = new EventSubscriberCollection();
@@ -31,7 +31,7 @@ namespace Mechanical4.EventQueue.Tests
         }
 
         [Test]
-        public static void RemoveEventSubscribersTest()
+        public static void RemoveSubscribersOfEvent()
         {
             var subscriber = new TestEventHandler();
             var collection = new EventSubscriberCollection();
@@ -51,7 +51,7 @@ namespace Mechanical4.EventQueue.Tests
         }
 
         [Test]
-        public static void ClearTest()
+        public static void Clear()
         {
             var subscriber = new TestEventHandler();
             var collection = new EventSubscriberCollection();
@@ -62,7 +62,7 @@ namespace Mechanical4.EventQueue.Tests
         }
 
         [Test]
-        public static void WeakSubscriberReferenceTest()
+        public static void WeakSubscriberReference()
         {
             var collection = new EventSubscriberCollection();
             WeakReference<TestEventHandler> weakRef;

@@ -27,7 +27,7 @@ namespace Mechanical4.EventQueue.Tests
         #endregion
 
         [Test]
-        public static void EnqueueUpdatesMetadataTest()
+        public static void EnqueueUpdatesMetadata()
         {
             var queue = new ManualEventQueue();
             var evnt = new NamedEvent("test");
@@ -38,13 +38,13 @@ namespace Mechanical4.EventQueue.Tests
 
             queue.Enqueue(evnt);
 
-            Assert.True(evnt.EventEnqueuePos.Contains(nameof(EnqueueUpdatesMetadataTest)));
+            Assert.True(evnt.EventEnqueuePos.Contains(nameof(EnqueueUpdatesMetadata)));
             Assert.AreEqual(DateTime.UtcNow.Date, evnt.EventEnqueueTime.Date);
             Assert.AreEqual(DateTimeKind.Utc, evnt.EventEnqueueTime.Date.Kind);
         }
 
         [Test]
-        public static void HandleNextInvokesHandlerTest()
+        public static void HandleNextInvokesHandler()
         {
             var queue = new ManualEventQueue();
             var evnt = new TestEvent();
@@ -67,7 +67,7 @@ namespace Mechanical4.EventQueue.Tests
         }
 
         [Test]
-        public static void EventsCanNotBeEnqueuedTwiceTest()
+        public static void EventsCanNotBeEnqueuedTwice()
         {
             var queue = new ManualEventQueue();
             var evnt = new TestEvent();
@@ -86,7 +86,7 @@ namespace Mechanical4.EventQueue.Tests
         }
 
         [Test]
-        public static void EventsCanNotBeEnqueuedAfterClosingTest()
+        public static void EventsCanNotBeEnqueuedAfterClosing()
         {
             var queue = new ManualEventQueue();
             var testListener = new TestEventHandler();
@@ -120,7 +120,7 @@ namespace Mechanical4.EventQueue.Tests
         }
 
         [Test]
-        public static void IsClosedTest()
+        public static void IsClosed()
         {
             // initially open
             var queue = new ManualEventQueue();
@@ -147,7 +147,7 @@ namespace Mechanical4.EventQueue.Tests
         }
 
         [Test]
-        public static void CriticalEventsHandledBeforeOthersTest()
+        public static void CriticalEventsHandledBeforeOthers()
         {
             var queue = new ManualEventQueue();
             var subscriber = new TestEventHandler();
@@ -168,7 +168,7 @@ namespace Mechanical4.EventQueue.Tests
         }
 
         [Test]
-        public static void NoNewSubscriptionsAfterClosedTest()
+        public static void NoNewSubscriptionsAfterClosed()
         {
             var queue = new ManualEventQueue();
             queue.Subscribers.Add(new TestEventHandler(), useWeakRef: false);

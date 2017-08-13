@@ -16,7 +16,7 @@ namespace Mechanical4.EventQueue.Tests
         }
 
         [Test]
-        public static void EmptyingQueueDoesNotCloseItTest()
+        public static void EmptyingQueueDoesNotCloseIt()
         {
             var queue = new TaskEventQueue();
             var subscriber = new TestEventHandler();
@@ -36,7 +36,7 @@ namespace Mechanical4.EventQueue.Tests
         }
 
         [Test]
-        public static void NoEventsOrSubscribersAfterStoppingTest()
+        public static void NoEventsOrSubscribersAfterStopping()
         {
             var queue = new TaskEventQueue();
             var subscriber = new TestEventHandler();

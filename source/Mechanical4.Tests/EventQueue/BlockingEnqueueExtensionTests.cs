@@ -6,7 +6,7 @@ namespace Mechanical4.EventQueue.Tests
     public static class BlockingEnqueueExtensionTests
     {
         [Test]
-        public static void EnqueueAndWaitAddsSecondEventTest()
+        public static void EnqueueAndWaitAddsSecondEvent()
         {
             var queue = new ManualEventQueue();
             var task = queue.EnqueueAndWaitAsync(new TestEvent());
