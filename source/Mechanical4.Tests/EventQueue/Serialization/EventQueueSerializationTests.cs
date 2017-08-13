@@ -20,6 +20,7 @@ namespace Mechanical4.EventQueue.Tests.Serialization
             public byte UInt8 { get; set; }
             public int Int32 { get; set; }
             public long Int64 { get; set; }
+            public float Single { get; set; }
             public string String { get; set; }
             public bool Boolean { get; set; }
 
@@ -28,6 +29,7 @@ namespace Mechanical4.EventQueue.Tests.Serialization
                 this.UInt8 = reader.ReadUInt8();
                 this.Int32 = reader.ReadInt32();
                 this.Int64 = reader.ReadInt64();
+                this.Single = reader.ReadSingle();
                 this.String = reader.ReadString();
                 this.Boolean = reader.ReadBoolean();
             }
@@ -37,6 +39,7 @@ namespace Mechanical4.EventQueue.Tests.Serialization
                 writer.Write(this.UInt8);
                 writer.Write(this.Int32);
                 writer.Write(this.Int64);
+                writer.Write(this.Single);
                 writer.Write(this.String);
                 writer.Write(this.Boolean);
             }
@@ -112,6 +115,7 @@ namespace Mechanical4.EventQueue.Tests.Serialization
                 UInt8 = 3,
                 Int32 = 5,
                 Int64 = int.MaxValue + 1L,
+                Single = (float)Math.PI,
                 String = "test",
                 Boolean = !default(bool)
             };
@@ -132,6 +136,7 @@ namespace Mechanical4.EventQueue.Tests.Serialization
                 Assert.AreEqual(eventToWrite.UInt8, dummyEvent.UInt8);
                 Assert.AreEqual(eventToWrite.Int32, dummyEvent.Int32);
                 Assert.AreEqual(eventToWrite.Int64, dummyEvent.Int64);
+                Assert.AreEqual(eventToWrite.Single, dummyEvent.Single);
                 Assert.True(string.Equals(eventToWrite.String, dummyEvent.String, StringComparison.Ordinal));
                 Assert.AreEqual(eventToWrite.Boolean, dummyEvent.Boolean);
 
@@ -141,6 +146,7 @@ namespace Mechanical4.EventQueue.Tests.Serialization
                 Assert.AreEqual(0, dummyEvent.UInt8);
                 Assert.AreEqual(0, dummyEvent.Int32);
                 Assert.AreEqual(0, dummyEvent.Int64);
+                Assert.AreEqual(0, dummyEvent.Single);
                 Assert.AreSame(null, dummyEvent.String);
                 Assert.AreEqual(false, dummyEvent.Boolean);
 

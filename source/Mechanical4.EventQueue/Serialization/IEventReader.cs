@@ -32,6 +32,13 @@
         long ReadInt64();
 
         /// <summary>
+        /// Deserializes the next component of the event, as a(n) <see cref="float"/> value.
+        /// Behaviour is undetermined, if this is not the same type of value that was originally serialized.
+        /// </summary>
+        /// <returns>The deserialized value.</returns>
+        float ReadSingle();
+
+        /// <summary>
         /// Deserializes the next component of the event, as a(n) <see cref="string"/> value.
         /// Behaviour is undetermined, if this is not the same type of value that was originally serialized.
         /// </summary>

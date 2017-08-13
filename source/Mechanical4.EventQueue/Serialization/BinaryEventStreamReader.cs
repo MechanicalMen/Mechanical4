@@ -149,6 +149,21 @@ namespace Mechanical4.EventQueue.Serialization
         }
 
         /// <summary>
+        /// Deserializes the next component of the event, as a(n) <see cref="float"/> value.
+        /// Behaviour is undetermined, if this is not the same type of value that was originally serialized.
+        /// </summary>
+        /// <returns>The deserialized value.</returns>
+        public float ReadSingle()
+        {
+            this.ThrowIfDisposed();
+
+            var result = this.eventStreamReader.ReadSingle();
+            if( this.eventStream.Position > this.nextEventStartPosition )
+                throw new FormatException("Tried to read more data than was available!");
+            return result;
+        }
+
+        /// <summary>
         /// Deserializes the next component of the event, as a(n) <see cref="string"/> value.
         /// Behaviour is undetermined, if this is not the same type of value that was originally serialized.
         /// </summary>

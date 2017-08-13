@@ -129,6 +129,17 @@ namespace Mechanical4.EventQueue.Serialization
         /// Serializes the specified value.
         /// </summary>
         /// <param name="value">The value to serialize.</param>
+        public void Write( float value )
+        {
+            this.ThrowIfDisposed();
+
+            this.writer.WriteValue(value);
+        }
+
+        /// <summary>
+        /// Serializes the specified value.
+        /// </summary>
+        /// <param name="value">The value to serialize.</param>
         public void Write( string value )
         {
             this.ThrowIfDisposed();

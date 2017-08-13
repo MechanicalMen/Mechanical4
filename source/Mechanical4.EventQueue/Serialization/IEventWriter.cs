@@ -27,6 +27,12 @@
         /// Serializes the specified value.
         /// </summary>
         /// <param name="value">The value to serialize.</param>
+        void Write( float value );
+
+        /// <summary>
+        /// Serializes the specified value.
+        /// </summary>
+        /// <param name="value">The value to serialize.</param>
         void Write( string value );
 
         /// <summary>
