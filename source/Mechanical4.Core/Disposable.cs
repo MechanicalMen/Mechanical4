@@ -85,6 +85,7 @@ namespace Mechanical4.Core
         /// Implements <see cref="IDisposable"/>.
         /// When Dispose is called concurrently, the first call executes,
         /// while subsequent calls do nothing and return immediately.
+        /// This is the default recommended implementation.
         /// </summary>
         public abstract class NonBlockingBase : IDisposableObject
         {
@@ -134,6 +135,7 @@ namespace Mechanical4.Core
         /// Implements <see cref="IDisposable"/>.
         /// When Dispose is called concurrently, the first call executes,
         /// while subsequent calls block until the first one finishes.
+        /// Unless you have a reason to, use <see cref="NonBlockingBase"/> instead.
         /// </summary>
         public abstract class BlockingBase : IDisposableObject
         {

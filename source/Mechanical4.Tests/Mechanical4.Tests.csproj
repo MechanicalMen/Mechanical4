@@ -50,6 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Core\CoreExtensionsTests.cs" />
+    <Compile Include="Core\ExcTests.cs" />
     <Compile Include="Core\DisposableTests.cs" />
     <Compile Include="Core\Misc\CommonStringConverterTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
