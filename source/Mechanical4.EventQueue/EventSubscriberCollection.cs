@@ -189,7 +189,7 @@ namespace Mechanical4.EventQueue
 
         private static bool CanHandle( ISubscriberWrapper wrapper, TypeInfo eventTypeInfo )
         {
-            return eventTypeInfo.IsAssignableFrom(wrapper.EventHandlerInfo.EventTypeInfo);
+            return wrapper.EventHandlerInfo.EventTypeInfo.IsAssignableFrom(eventTypeInfo);
         }
 
         private static WrapperConstructor CompileCreateWrapperDelegate( EventHandlerInfo eventHandler, bool useWeakRef )

@@ -46,7 +46,8 @@ namespace Mechanical4.EventQueue.Tests
 
             // or remove them both
             collection.Add(subscriber);
-            Assert.True(collection.Remove<EventBase>());
+            Assert.True(collection.Remove<NamedEvent>());
+            Assert.True(collection.Remove<TestEvent>());
             Assert.False(collection.Remove(subscriber));
         }
 

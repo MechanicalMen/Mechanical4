@@ -26,6 +26,28 @@ namespace Mechanical4.EventQueue.Tests
 
         #endregion
 
+        #region DescendantEvent, NamedEventHandler
+
+        private class DescendantEvent : NamedEvent
+        {
+            internal DescendantEvent()
+                : base("test")
+            {
+            }
+        }
+
+        private class AncestorEventHandler : IEventHandler<NamedEvent>
+        {
+            public EventBase LastEventHandled { get; private set; }
+
+            public void Handle( NamedEvent evnt )
+            {
+                this.LastEventHandled = evnt;
+            }
+        }
+
+        #endregion
+
         [Test]
         public static void EnqueueUpdatesMetadata()
         {
@@ -178,6 +200,44 @@ namespace Mechanical4.EventQueue.Tests
             Assert.True(queue.IsClosed);
             Assert.False(queue.Subscribers.Remove<TestEvent>()); // closing the queue removes subscribers
             Assert.False(queue.Subscribers.Add(new TestEventHandler(), useWeakRef: false));
+        }
+
+        [Test]
+        public static void HandleAndRemoveAcceptTypeInheritance()
+        {
+            var queue = new ManualEventQueue();
+            var subscriber = new AncestorEventHandler();
+            queue.Subscribers.Add(subscriber);
+
+            // subscriber does not handle events not in it's inheritance tree
+            queue.Enqueue(new TestEvent());
+            queue.HandleNext();
+            Assert.Null(subscriber.LastEventHandled);
+
+            // subscriber accepts event type it explicitly stated it would handle
+            var namedEvent = new NamedEvent("name");
+            queue.Enqueue(namedEvent);
+            queue.HandleNext();
+            Assert.AreSame(namedEvent, subscriber.LastEventHandled);
+
+            // subscriber accepts event that inherit what it declared it would handle
+            var derivedEvent = new DescendantEvent();
+            queue.Enqueue(derivedEvent);
+            queue.HandleNext();
+            Assert.AreSame(derivedEvent, subscriber.LastEventHandled);
+
+            // Remove<T> preserves subscribers, if they can not handle the event
+            Assert.False(queue.Subscribers.Remove<TestEvent>());
+            Assert.False(queue.Subscribers.Remove<EventBase>());
+
+            // Remove<T> triggers on event type equality
+            Assert.True(queue.Subscribers.Remove<NamedEvent>());
+            Assert.False(queue.Subscribers.Remove<NamedEvent>());
+
+            // Remove<T> triggers on event type inheritance
+            queue.Subscribers.Add(subscriber);
+            Assert.True(queue.Subscribers.Remove<DescendantEvent>());
+            Assert.False(queue.Subscribers.Remove<DescendantEvent>());
         }
     }
 }
