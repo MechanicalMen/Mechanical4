@@ -1,4 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
+using Mechanical4.EventQueue.Events;
 
 namespace Mechanical4.EventQueue
 {
@@ -9,6 +10,9 @@ namespace Mechanical4.EventQueue
     {
         /// <summary>
         /// Enqueues an event, to be handled by subscribers sometime later.
+        /// There is no guarantee that the event will end up being handled
+        /// (e.g. closed queues can not enqueue, and critical closing events
+        /// disable non-critical event handling, see <see cref="EventQueueClosingEvent.IsCritical"/>).
         /// </summary>
         /// <param name="evnt">The event to enqueue.</param>
         /// <param name="critical"><c>true</c> if the event needs to be handled before other non-critical events; otherwise, <c>false</c>.</param>

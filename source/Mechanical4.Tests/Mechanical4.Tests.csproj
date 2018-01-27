@@ -58,6 +58,7 @@
     <Compile Include="Core\Misc\CommonStringConverterTests.cs" />
     <Compile Include="EventQueue\BlockingEnqueueExtensionTests.cs" />
     <Compile Include="EventQueue\EventSubscriberCollectionTests.cs" />
+    <Compile Include="EventQueue\DelegateEventHandlerTests.cs" />
     <Compile Include="EventQueue\ManualEventQueueTests.cs" />
     <Compile Include="EventQueue\Serialization\BinaryEventStreamTests.cs" />
     <Compile Include="EventQueue\Serialization\EventQueueSerializationTests.cs" />

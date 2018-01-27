@@ -132,6 +132,9 @@ namespace Mechanical4.EventQueue
 
         /// <summary>
         /// Enqueues an event, to be handled by subscribers sometime later.
+        /// There is no guarantee that the event will end up being handled
+        /// (e.g. closed queues can not enqueue, and critical closing events
+        /// disable non-critical event handling, see <see cref="EventQueueClosingEvent.IsCritical"/>).
         /// </summary>
         /// <param name="evnt">The event to enqueue.</param>
         /// <param name="critical"><c>true</c> if the event needs to be handled before other non-critical events; otherwise, <c>false</c>.</param>
@@ -189,8 +192,26 @@ namespace Mechanical4.EventQueue
 
         /// <summary>
         /// Enqueues an <see cref="EventQueueClosingEvent"/>.
+        /// Critical closing events indicate that the application is being forced to terminate (see <see cref="EventQueueClosingEvent.IsCritical"/>),
+        /// and that the queue should only handle critical events.
         /// </summary>
-        public void BeginClose() => this.Enqueue(new EventQueueClosingEvent());
+        /// <param name="critical"><c>true</c> if the application is being forced to terminate; otherwise, <c>false</c>.</param>
+        /// <param name="file">The source file of the caller.</param>
+        /// <param name="member">The method or property name of the caller to this method.</param>
+        /// <param name="line">The line number in <paramref name="file"/>.</param>
+        public void BeginClose(
+            bool critical = false,
+            [CallerFilePath] string file = "",
+            [CallerMemberName] string member = "",
+            [CallerLineNumber] int line = 0 )
+        {
+            this.Enqueue(
+                new EventQueueClosingEvent(critical),
+                critical,
+                file,
+                member,
+                line);
+        }
 
         /// <summary>
         /// Gets a value indicating whether this event queue is closed (see: <see cref="EventQueueClosingEvent"/>).
@@ -229,12 +250,17 @@ namespace Mechanical4.EventQueue
 
             // event queue closing?
             if( state == State.ClosingEventEnqueued
-             && evnt is EventQueueClosingEvent )
+             && evnt is EventQueueClosingEvent closingEvent )
             {
                 lock( this.eventsLock )
                 {
                     this.eventsState = State.NoNewEventsAccepted;
                     state = this.eventsState;
+
+                    // critical closing event?
+                    // (do not handle non-critical events!)
+                    if( closingEvent.IsCritical )
+                        this.normalEvents.Clear();
                 }
             }
 
