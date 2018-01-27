@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Runtime.CompilerServices;
+using Mechanical4.Core;
+using Mechanical4.Core.Misc;
 using Mechanical4.EventQueue.Events;
 using Mechanical4.EventQueue.Serialization;
-using Mechanical4.Core;
 
 namespace Mechanical4.EventQueue
 {
@@ -24,8 +24,6 @@ namespace Mechanical4.EventQueue
             NoNewEventsAccepted,
             Closed
         }
-
-        private static readonly char[] FilePathSeparators = new char[] { '\\', '/' };
 
         private readonly object eventsLock = new object();
         private readonly object eventHandlingLock = new object();
@@ -75,20 +73,6 @@ namespace Mechanical4.EventQueue
             }
 
             return found;
-        }
-
-        private static string ToSourceCodePosition( string file, string member, int line )
-        {
-            string getFileName( string str )
-            {
-                int separator = str?.LastIndexOfAny(FilePathSeparators) ?? -1;
-                if( separator == -1 )
-                    return str;
-                else
-                    return str.Substring(startIndex: separator + 1); // this works even if the separator is the last character
-            }
-
-            return string.Format(CultureInfo.InvariantCulture, "{0}, {1}:{2}", member, getFileName(file), line);
         }
 
         private EventBase TakeNextEvent()
@@ -170,7 +154,7 @@ namespace Mechanical4.EventQueue
                         this.eventsState = State.ClosingEventEnqueued;
                 }
 
-                evnt.EventEnqueuePos = ToSourceCodePosition(file, member, line);
+                evnt.EventEnqueuePos = FileLine.Compact(file, member, line);
                 if( evnt is SerializableEventBase se )
                     se.EventEnqueueTime = DateTime.UtcNow;
 
