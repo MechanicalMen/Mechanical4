@@ -36,11 +36,11 @@ namespace Mechanical4.EventQueue.Serialization
             // read and verify format version
             var eventReader = this.streamReader.TryRead();
             if( eventReader.NullReference() )
-                throw new FormatException("Invalid event stream: stream format version not found! (unexpected end of stream)");
+                throw new FormatException("Invalid event stream: stream format version not found! (unexpected end of stream)").StoreFileLine();
 
             var streamFormatVersion = eventReader.ReadInt32();
             if( streamFormatVersion != EventQueueSerializer.FormatVersion )
-                throw new FormatException($"The {nameof(EventQueueSerializer)} format can not be parsed! (expected version: {EventQueueSerializer.FormatVersion}; actual version: {streamFormatVersion})");
+                throw new FormatException($"The {nameof(EventQueueSerializer)} format can not be parsed!").Store("expectedVersion", EventQueueSerializer.FormatVersion.ToString()).Store("actualVersion", streamFormatVersion.ToString());
         }
 
         #endregion

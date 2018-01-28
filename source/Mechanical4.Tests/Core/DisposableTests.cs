@@ -35,7 +35,7 @@ namespace Mechanical4.Tests.Core
                 this.Dummy.Increase();
             }
 
-            public new void ThrowIfDisposed()
+            public void ThrowIfDisposed()
             {
                 base.ThrowIfDisposed();
             }
@@ -50,7 +50,7 @@ namespace Mechanical4.Tests.Core
                 this.Dummy.Increase();
             }
 
-            public new void ThrowIfDisposed()
+            public void ThrowIfDisposed()
             {
                 base.ThrowIfDisposed();
             }

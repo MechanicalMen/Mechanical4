@@ -716,7 +716,7 @@ namespace Mechanical4.Core.Misc
             public string ToString( string obj )
             {
                 if( obj.NullReference() )
-                    throw new ArgumentNullException(nameof(obj));
+                    throw Exc.Null(nameof(obj));
 
                 return obj;
             }

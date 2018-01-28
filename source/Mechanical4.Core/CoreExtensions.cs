@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using Mechanical4.Core.Misc;
 
 namespace Mechanical4.Core
 {
@@ -141,10 +144,10 @@ namespace Mechanical4.Core
         public static bool Contains<T>( this IEnumerable<T> sequence, Func<T, bool> predicate )
         {
             if( sequence.NullReference() )
-                throw new ArgumentNullException(nameof(sequence));
+                throw Exc.Null(nameof(sequence));
 
             if( predicate.NullReference() )
-                throw new ArgumentNullException(nameof(predicate));
+                throw Exc.Null(nameof(predicate));
 
             var list = sequence as IList<T>;
             if( list.NotNullReference() )
@@ -204,7 +207,7 @@ namespace Mechanical4.Core
             where T : struct
         {
             if( sequence.NullReference() )
-                throw new ArgumentNullException(nameof(sequence));
+                throw Exc.Null(nameof(sequence));
 
             var list = sequence as IList<T>;
             if( list.NotNullReference() )
@@ -243,6 +246,190 @@ namespace Mechanical4.Core
             where T : struct
         {
             return sequence.Where(predicate).FirstOrNullable();
+        }
+
+        #endregion
+
+        #region Exception
+
+        /// <summary>
+        /// Copies <see cref="Exception.Data"/> into an array of key-value pairs.
+        /// </summary>
+        /// <param name="e">The exception to use.</param>
+        /// <returns>An array of key-value pairs.</returns>
+        public static KeyValuePair<string, string>[] GetPairs( this Exception e )
+        {
+            var result = new List<KeyValuePair<string, string>>();
+            foreach( DictionaryEntry entry in e.Data )
+            {
+                if( entry.Key is string key )
+                {
+                    // we only care about non-null string values, or null
+                    if( entry.Value.NullReference() )
+                    {
+                        result.Add(new KeyValuePair<string, string>(key, null));
+                    }
+                    else if( entry.Value is string value ) // do not yield, if not a string
+                    {
+                        result.Add(new KeyValuePair<string, string>(key, value));
+                    }
+                }
+            }
+            return result.ToArray();
+        }
+
+        private static bool TryGetValue( Exception e, string key, out string value )
+        {
+            foreach( var pair in GetPairs(e) )
+            {
+                if( string.Equals(key, pair.Key, StringComparison.Ordinal) )
+                {
+                    value = pair.Value;
+                    return true;
+                }
+            }
+
+            value = null;
+            return false;
+        }
+
+        private static void AddOrSet( Exception e, string key, string value )
+        {
+            e.Data[key] = value;
+        }
+
+        /// <summary>
+        /// Stores the current source file position (using the "PartialStackTrace" key).
+        /// </summary>
+        /// <typeparam name="TException">The type of the exception.</typeparam>
+        /// <param name="e">The exception to store data in.</param>
+        /// <param name="file">The source file that contains the caller.</param>
+        /// <param name="member">The method or property name of the caller to this method.</param>
+        /// <param name="line">The line number in the source file at which this method is called.</param>
+        /// <returns>The exception the data was stored in.</returns>
+        public static TException StoreFileLine<TException>(
+            this TException e,
+            [CallerFilePath] string file = "",
+            [CallerMemberName] string member = "",
+            [CallerLineNumber] int line = 0 )
+            where TException : Exception
+        {
+            const string key = "PartialStackTrace";
+            string newValue = FileLine.Compact(file, member, line);
+            if( TryGetValue(e, key, out var oldValue) )
+            {
+                if( !oldValue.NullOrEmpty() )
+                    newValue = newValue + "\r\n" + oldValue;
+            }
+            AddOrSet(e, key, newValue);
+            return e;
+        }
+
+        private static bool SameMemberAsTopPartialStackTrace( Exception e, string file, string member )
+        {
+            const string key = "PartialStackTrace";
+            if( !TryGetValue(e, key, out string partialStackTrace) )
+                return false;
+
+            int firstLineEndsAt = partialStackTrace.IndexOf('\r');
+            string firstLine = firstLineEndsAt == -1 ? partialStackTrace : partialStackTrace.Substring(0, firstLineEndsAt);
+
+            string pstFile, pstMember;
+            try
+            {
+                FileLine.ParseCompact(firstLine, out pstFile, out pstMember, out _);
+            }
+            catch
+            {
+                return false;
+            }
+
+            return string.Equals(pstFile, file, StringComparison.Ordinal)
+                && string.Equals(pstMember, member, StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// Stores a key-value pair in <see cref="Exception.Data"/>.
+        /// The <paramref name="key"/> may be changed slightly, if it is already in use.
+        /// The first call in a member automatically invokes <see cref="StoreFileLine"/>.
+        /// </summary>
+        /// <typeparam name="TException">The type of the exception.</typeparam>
+        /// <param name="e">The exception to store data in.</param>
+        /// <param name="key">The key to store.</param>
+        /// <param name="value">The value to store.</param>
+        /// <param name="file">The source file that contains the caller.</param>
+        /// <param name="member">The method or property name of the caller to this method.</param>
+        /// <param name="line">The line number in the source file at which this method is called.</param>
+        /// <returns>The exception the data was stored in.</returns>
+        public static TException Store<TException>(
+            this TException e,
+            string key,
+            string value,
+            [CallerFilePath] string file = "",
+            [CallerMemberName] string member = "",
+            [CallerLineNumber] int line = 0 )
+            where TException : Exception
+        {
+            if( key.NullReference() )
+                throw Exc.Null(nameof(key));
+
+            if( !SameMemberAsTopPartialStackTrace(e, file, member) )
+                StoreFileLine(e, file, member, line);
+
+            // we do not allow overwriting of earlier data
+            string name = key;
+            int i = 2;
+            while( TryGetValue(e, name, out _) )
+            {
+                name = key + i.ToString("D", CultureInfo.InvariantCulture);
+                ++i;
+            }
+
+            AddOrSet(e, name, value);
+            return e;
+        }
+
+        /// <summary>
+        /// Executes the delegate, and stores it's return value in the exception.
+        /// Exceptions thrown by the delegate silently replace the intended value.
+        /// </summary>
+        /// <typeparam name="TException">The type of the exception.</typeparam>
+        /// <param name="e">The exception to store data in.</param>
+        /// <param name="name">The name of the value.</param>
+        /// <param name="dlgt">The delegate returning the value to store. Exceptions thrown will be silently caught.</param>
+        /// <param name="file">The source file that contains the caller.</param>
+        /// <param name="member">The method or property name of the caller to this method.</param>
+        /// <param name="line">The line number in the source file at which this method is called.</param>
+        /// <returns>The exception data was stored in.</returns>
+        public static TException Store<TException>(
+            this TException e,
+            string name,
+            Func<string> dlgt,
+            [CallerFilePath] string file = "",
+            [CallerMemberName] string member = "",
+            [CallerLineNumber] int line = 0 )
+            where TException : Exception
+        {
+            string value;
+            Exception exception;
+            try
+            {
+                if( dlgt.NullReference() )
+                    throw new ArgumentNullException("Delegate is null!", innerException: null);
+
+                value = dlgt();
+                exception = null;
+            }
+            catch( Exception ex )
+            {
+                value = default(string);
+                exception = ex;
+            }
+
+            if( exception.NullReference() )
+                return Store(e, name, value, file, member, line);
+            else
+                return Store(e, name, $"{exception.GetType().Name}: {exception.Message}", file, member, line);
         }
 
         #endregion

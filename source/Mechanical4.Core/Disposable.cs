@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace Mechanical4.Core
@@ -120,10 +121,16 @@ namespace Mechanical4.Core
             /// <summary>
             /// Throws an <see cref="ObjectDisposedException"/>, if this instance was already disposed.
             /// </summary>
-            protected void ThrowIfDisposed()
+            /// <param name="file">The source file that contains the caller.</param>
+            /// <param name="member">The method or property name of the caller to this method.</param>
+            /// <param name="line">The line number in the source file at which this method is called.</param>
+            protected void ThrowIfDisposed(
+                [CallerFilePath] string file = "",
+                [CallerMemberName] string member = "",
+                [CallerLineNumber] int line = 0 )
             {
                 if( this.IsDisposed )
-                    throw new ObjectDisposedException(null);
+                    throw new ObjectDisposedException(null).StoreFileLine(file, member, line);
             }
         }
 
@@ -187,10 +194,16 @@ namespace Mechanical4.Core
             /// <summary>
             /// Throws an <see cref="ObjectDisposedException"/>, if this instance was already disposed.
             /// </summary>
-            protected void ThrowIfDisposed()
+            /// <param name="file">The source file that contains the caller.</param>
+            /// <param name="member">The method or property name of the caller to this method.</param>
+            /// <param name="line">The line number in the source file at which this method is called.</param>
+            protected void ThrowIfDisposed(
+                [CallerFilePath] string file = "",
+                [CallerMemberName] string member = "",
+                [CallerLineNumber] int line = 0 )
             {
                 if( this.IsDisposed )
-                    throw new ObjectDisposedException(null);
+                    throw new ObjectDisposedException(null).StoreFileLine(file, member, line);
             }
         }
 

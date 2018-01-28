@@ -37,7 +37,7 @@ namespace Mechanical4.EventQueue.Serialization
             this.AssertCanRead();
             if( this.reader.TokenType != JsonToken.Integer
              || (long)this.reader.Value != JsonEventStreamWriter.JsonFormatVersion )
-                throw new FormatException($"Unknown json format! (expected version: {JsonEventStreamWriter.JsonFormatVersion}; actual version (as string): \"{this.reader.Value?.ToString()}\")");
+                throw new FormatException($"Unknown json format!").Store("expectedVersion", JsonEventStreamWriter.JsonFormatVersion.ToString()).Store("actualVersion", () => this.reader.Value?.ToString());
 
             this.ReadPropertyName(JsonEventStreamWriter.EventsPropertyName);
             this.ReadToken(JsonToken.StartArray);
@@ -56,14 +56,14 @@ namespace Mechanical4.EventQueue.Serialization
         private void AssertToken( JsonToken token )
         {
             if( this.reader.TokenType != token )
-                throw new FormatException($"Expected token: {token}; actual token: {this.reader.TokenType}.");
+                throw new FormatException().Store("expectedToken", token.ToString()).Store("actualToken", () => this.reader.TokenType.ToString());
         }
 
         private void AssertToken( JsonToken token1, JsonToken token2 )
         {
             if( this.reader.TokenType != token1
              && this.reader.TokenType != token2 )
-                throw new FormatException($"Expected tokens: [{token1}, {token2}]; actual token: {this.reader.TokenType}.");
+                throw new FormatException().Store("expectedToken", token1.ToString()).Store("expectedToken2", token2.ToString()).Store("actualToken", () => this.reader.TokenType.ToString());
         }
 
         private void ReadToken( JsonToken token )
@@ -76,7 +76,7 @@ namespace Mechanical4.EventQueue.Serialization
         {
             this.ReadToken(JsonToken.PropertyName);
             if( !string.Equals((string)this.reader.Value, propertyName, StringComparison.Ordinal) )
-                throw new FormatException($@"Expected property name: ""{propertyName}""; actual property name: ""{(string)this.reader.Value}"".");
+                throw new FormatException().Store("expectedPropertyName", propertyName).Store("actualPropertyName", () => (string)this.reader.Value);
         }
 
         #endregion

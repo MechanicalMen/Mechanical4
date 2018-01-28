@@ -38,7 +38,7 @@ namespace Mechanical4.EventQueue.Serialization
             // verify format
             var formatVersion = this.eventStreamReader.ReadByte();
             if( formatVersion != BinaryEventStreamWriter.BinaryFormatVersion )
-                throw new FormatException($"Unknown binary format! (expected version: {BinaryEventStreamWriter.BinaryFormatVersion}; actual version: {formatVersion})");
+                throw new FormatException($"Unknown binary format!").Store("expectedVersion", BinaryEventStreamWriter.BinaryFormatVersion.ToString()).Store("actualVersion", formatVersion.ToString());
         }
 
         #endregion

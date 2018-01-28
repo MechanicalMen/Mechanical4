@@ -94,15 +94,15 @@ namespace Mechanical4.Core.Misc
 
             int memberAt = str.IndexOf(',');
             if( memberAt == -1 )
-                throw new FormatException($"Member separator not found! ({str})");
+                throw new FormatException().Store(nameof(str), str);
             else
                 member = str.Substring(startIndex: 0, length: memberAt).Trim();
 
             int lineAt = str.LastIndexOf(':');
             if( lineAt == -1 )
-                throw new FormatException($"Line separator not found! ({str})");
+                throw new FormatException().Store(nameof(str), str);
             else if( !int.TryParse(str.Substring(startIndex: lineAt + 1), NumberStyles.Integer, CultureInfo.InvariantCulture, out line) )
-                throw new FormatException($"Line number could not be parsed! ({str})");
+                throw new FormatException().Store(nameof(str), str);
 
             file = str.Substring(startIndex: memberAt + 1, length: lineAt - memberAt - 1).Trim();
         }
