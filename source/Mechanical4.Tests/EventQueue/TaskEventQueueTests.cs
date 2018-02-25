@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Mechanical4.EventQueue;
 using NUnit.Framework;
 
-namespace Mechanical4.EventQueue.Tests
+namespace Mechanical4.Tests.EventQueue
 {
     [TestFixture]
     public static class TaskEventQueueTests
@@ -71,6 +72,14 @@ namespace Mechanical4.EventQueue.Tests
             Thread.Sleep(SleepTime);
             Assert.AreSame(evnt, subscriber.LastEventHandled);
 
+            queue.BeginClose();
+        }
+
+        [Test]
+        public static void CriticalEventsNotSupported()
+        {
+            var queue = new TaskEventQueue();
+            Assert.Throws<ArgumentException>(() => queue.Enqueue(new TestCriticalEvent()));
             queue.BeginClose();
         }
     }

@@ -1,10 +1,11 @@
 ﻿using System;
 using System.IO;
 using System.Threading;
+using Mechanical4.EventQueue;
 using Mechanical4.EventQueue.Serialization;
 using NUnit.Framework;
 
-namespace Mechanical4.EventQueue.Tests.Serialization
+namespace Mechanical4.Tests.EventQueue.Serialization
 {
     [TestFixture]
     public static class EventQueueSerializationTests

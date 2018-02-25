@@ -1,6 +1,7 @@
-﻿using NUnit.Framework;
+﻿using Mechanical4.EventQueue;
+using NUnit.Framework;
 
-namespace Mechanical4.EventQueue.Tests
+namespace Mechanical4.Tests.EventQueue
 {
     [TestFixture]
     public static class BlockingEnqueueExtensionTests

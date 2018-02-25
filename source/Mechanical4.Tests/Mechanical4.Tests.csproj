@@ -60,6 +60,7 @@
     <Compile Include="EventQueue\BlockingEnqueueExtensionTests.cs" />
     <Compile Include="EventQueue\EventSubscriberCollectionTests.cs" />
     <Compile Include="EventQueue\DelegateEventHandlerTests.cs" />
+    <Compile Include="EventQueue\MainEventQueueTests.cs" />
     <Compile Include="EventQueue\ManualEventQueueTests.cs" />
     <Compile Include="EventQueue\Serialization\BinaryEventStreamTests.cs" />
     <Compile Include="EventQueue\Serialization\EventQueueSerializationTests.cs" />
@@ -69,6 +70,7 @@
     <Compile Include="EventQueue\TestEvent.cs" />
     <Compile Include="EventQueue\TestEventHandler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TestCriticalEvent.cs" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />

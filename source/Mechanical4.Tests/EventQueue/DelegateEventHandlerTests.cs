@@ -1,8 +1,9 @@
 ﻿using System;
+using Mechanical4.EventQueue;
 using Mechanical4.EventQueue.Events;
 using NUnit.Framework;
 
-namespace Mechanical4.EventQueue.Tests
+namespace Mechanical4.Tests.EventQueue
 {
     [TestFixture]
     public static class DelegateEventHandlerTests

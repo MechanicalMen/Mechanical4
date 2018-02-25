@@ -1,6 +1,7 @@
-﻿using Mechanical4.EventQueue.Events;
+﻿using Mechanical4.EventQueue;
+using Mechanical4.EventQueue.Events;
 
-namespace Mechanical4.EventQueue.Tests
+namespace Mechanical4.Tests.EventQueue
 {
     public class TestEventHandler : IEventHandler<NamedEvent>, IEventHandler<TestEvent>
     {
@@ -9,7 +10,7 @@ namespace Mechanical4.EventQueue.Tests
             this.LastEventHandled = evnt;
         }
 
-        public void Handle( TestEvent evnt )
+        public virtual void Handle( TestEvent evnt )
         {
             this.LastEventHandled = evnt;
         }

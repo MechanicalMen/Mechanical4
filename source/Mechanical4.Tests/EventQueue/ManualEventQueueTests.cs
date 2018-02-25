@@ -1,8 +1,9 @@
 ﻿using System;
+using Mechanical4.EventQueue;
 using Mechanical4.EventQueue.Events;
 using NUnit.Framework;
 
-namespace Mechanical4.EventQueue.Tests
+namespace Mechanical4.Tests.EventQueue
 {
     [TestFixture]
     public static class ManualEventQueueTests
@@ -169,44 +170,6 @@ namespace Mechanical4.EventQueue.Tests
         }
 
         [Test]
-        public static void CriticalEventsHandledBeforeOthers()
-        {
-            var queue = new ManualEventQueue();
-            var subscriber = new TestEventHandler();
-            queue.Subscribers.Add(subscriber);
-
-            queue.Enqueue(new TestEvent() { Value = 3 }, critical: false);
-            queue.Enqueue(new TestEvent() { Value = 4 }, critical: true);
-            queue.Enqueue(new TestEvent() { Value = 5 }, critical: false);
-            queue.Enqueue(new TestEvent() { Value = 6 }, critical: true);
-            Assert.True(queue.HandleNext());
-            Assert.AreEqual(4, ((TestEvent)subscriber.LastEventHandled).Value);
-            Assert.True(queue.HandleNext());
-            Assert.AreEqual(6, ((TestEvent)subscriber.LastEventHandled).Value);
-            Assert.True(queue.HandleNext());
-            Assert.AreEqual(3, ((TestEvent)subscriber.LastEventHandled).Value);
-            Assert.True(queue.HandleNext());
-            Assert.AreEqual(5, ((TestEvent)subscriber.LastEventHandled).Value);
-        }
-
-        [Test]
-        public static void CriticalClosingEvent()
-        {
-            var queue = new ManualEventQueue();
-            var subscriber = new TestEventHandler();
-            queue.Subscribers.Add(subscriber);
-
-            queue.Enqueue(new TestEvent() { Value = 3 }, critical: false);
-            queue.Enqueue(new TestEvent() { Value = 4 }, critical: true);
-            queue.BeginClose(critical: true);
-            Assert.True(queue.HandleNext());
-            Assert.AreEqual(4, ((TestEvent)subscriber.LastEventHandled).Value); // critical events handled in FIFO order
-            Assert.True(queue.HandleNext());
-            Assert.True(queue.IsClosed);
-            Assert.AreEqual(4, ((TestEvent)subscriber.LastEventHandled).Value); // #3 never handled!
-        }
-
-        [Test]
         public static void NoNewSubscriptionsAfterClosed()
         {
             var queue = new ManualEventQueue();
@@ -275,6 +238,13 @@ namespace Mechanical4.EventQueue.Tests
             queue.IsSuspended = false;
             Assert.True(queue.HandleNext());
             Assert.AreSame(evnt, testListener.LastEventHandled);
+        }
+
+        [Test]
+        public static void CriticalEventsNotSupported()
+        {
+            var queue = new ManualEventQueue();
+            Assert.Throws<ArgumentException>(() => queue.Enqueue(new TestCriticalEvent()));
         }
     }
 }

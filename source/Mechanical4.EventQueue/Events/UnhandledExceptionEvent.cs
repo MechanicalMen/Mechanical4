@@ -26,7 +26,7 @@ namespace Mechanical4.EventQueue.Events
         /// <summary>
         /// Initializes a new instance of the <see cref="UnhandledExceptionEvent"/> class.
         /// </summary>
-        /// <param name="exception">The event to serialize.</param>
+        /// <param name="exception">The exception to report.</param>
         public UnhandledExceptionEvent( Exception exception )
         {
             if( exception.NullReference() )

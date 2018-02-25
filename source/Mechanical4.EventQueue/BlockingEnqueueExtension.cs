@@ -2,7 +2,6 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Mechanical4.Core;
-using Mechanical4.EventQueue.Events;
 
 namespace Mechanical4.EventQueue
 {
@@ -59,11 +58,11 @@ namespace Mechanical4.EventQueue
         #region EnqueueAndWaitAsync
 
         /// <summary>
-        /// Enqueues the (non-critical) event, plus another one.
-        /// Waits for the second event to start being handled,
-        /// this will happen sometime after the first event is finished being handled.
-        /// Neither event may end up being handled, in the case of a critical closing event
-        /// (see <see cref="EventQueueClosingEvent.IsCritical"/>).
+        /// Enqueues an event, to be handled by subscribers sometime later.
+        /// There is no guarantee that the event will end up being handled
+        /// (e.g. closed queues can not enqueue, and the application
+        /// may be terminated beforehand).
+        /// Suspended event queues can still enqueue events (see <see cref="IEventQueue.IsSuspended"/>).
         /// </summary>
         /// <param name="eventQueue">The event queue to add the event to.</param>
         /// <param name="evnt">The event to enqueue.</param>
@@ -82,9 +81,8 @@ namespace Mechanical4.EventQueue
             var waitingListener = new WaitingListener(eventQueue, waitingEvent.Index);
             eventQueue.Subscribers.Add(waitingListener, useWeakRef: false);
 
-            const bool critical = false; // you should not be waiting for critical events! (just raise them, and terminate asap)
-            eventQueue.Enqueue(evnt, critical, file, member, line);
-            eventQueue.Enqueue(waitingEvent, critical, file, member, line);
+            eventQueue.Enqueue(evnt, file, member, line);
+            eventQueue.Enqueue(waitingEvent, file, member, line);
 
             return waitingListener.Task;
         }

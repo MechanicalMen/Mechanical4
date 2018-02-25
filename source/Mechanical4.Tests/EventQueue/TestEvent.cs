@@ -1,4 +1,6 @@
-﻿namespace Mechanical4.EventQueue.Tests
+﻿using Mechanical4.EventQueue;
+
+namespace Mechanical4.Tests.EventQueue
 {
     public class TestEvent : EventBase
     {
