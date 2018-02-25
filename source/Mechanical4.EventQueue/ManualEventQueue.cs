@@ -31,6 +31,7 @@ namespace Mechanical4.EventQueue
         private readonly List<EventBase> criticalEvents = new List<EventBase>();
         private readonly List<Exception> eventHandlerExceptions = new List<Exception>();
         private State eventsState = State.Open;
+        private bool isSuspended = false;
 
         #endregion
 
@@ -93,15 +94,27 @@ namespace Mechanical4.EventQueue
 
         private bool HasMoreEvents => this.normalEvents.Count + this.criticalEvents.Count > 0;
 
-        private Exception HandleEvent( EventBase evnt )
+        #endregion
+
+        #region Internal Methods
+
+        internal static void SetMetaData( EventBase evnt, string file, string member, int line )
         {
-            this.Subscribers.Handle(evnt, this.eventHandlerExceptions);
-            if( this.eventHandlerExceptions.Count != 0 )
+            evnt.EventEnqueuePos = FileLine.Compact(file, member, line);
+
+            if( evnt is SerializableEventBase se )
+                se.EventEnqueueTime = DateTime.UtcNow;
+        }
+
+        internal static Exception HandleEvent( EventBase evnt, EventSubscriberCollection subscribers, List<Exception> eventHandlerExceptions )
+        {
+            subscribers.Handle(evnt, eventHandlerExceptions);
+            if( eventHandlerExceptions.Count != 0 )
             {
                 var exception = new AggregateException(
                     $"Unhandled exception(s) thrown, while handling an event ({evnt.ToString()}). The event was enqueued at: {evnt.EventEnqueuePos}.",
-                    this.eventHandlerExceptions.ToArray());
-                this.eventHandlerExceptions.Clear();
+                    eventHandlerExceptions.ToArray());
+                eventHandlerExceptions.Clear();
                 return exception;
             }
             else
@@ -154,10 +167,7 @@ namespace Mechanical4.EventQueue
                         this.eventsState = State.ClosingEventEnqueued;
                 }
 
-                evnt.EventEnqueuePos = FileLine.Compact(file, member, line);
-                if( evnt is SerializableEventBase se )
-                    se.EventEnqueueTime = DateTime.UtcNow;
-
+                SetMetaData(evnt, file, member, line);
                 if( critical )
                     this.criticalEvents.Add(evnt);
                 else
@@ -169,6 +179,24 @@ namespace Mechanical4.EventQueue
         /// Gets the collection of event handlers.
         /// </summary>
         public EventSubscriberCollection Subscribers { get; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the handling of enqueued events is currently allowed.
+        /// Suspension does not apply to event handling already in progress.
+        /// </summary>
+        public bool IsSuspended
+        {
+            get
+            {
+                lock( this.eventsLock )
+                    return this.isSuspended;
+            }
+            set
+            {
+                lock( this.eventsLock )
+                    this.isSuspended = value;
+            }
+        }
 
         #endregion
 
@@ -218,11 +246,14 @@ namespace Mechanical4.EventQueue
         {
             // get next event
             EventBase evnt = null;
-            State state;
+            var state = default(State); // keep compiler happy
             lock( this.eventsLock )
             {
-                evnt = this.TakeNextEvent();
-                state = this.eventsState;
+                if( !this.IsSuspended ) // we don't throw exceptions, because we may get suspended after this method is called, but before we check for suspension.
+                {
+                    evnt = this.TakeNextEvent();
+                    state = this.eventsState;
+                }
             }
             if( evnt.NullReference() )
                 return false;
@@ -230,7 +261,7 @@ namespace Mechanical4.EventQueue
             // handle event
             Exception exception = null;
             lock( this.eventHandlingLock )
-                exception = this.HandleEvent(evnt);
+                exception = HandleEvent(evnt, this.Subscribers, this.eventHandlerExceptions);
 
             // event queue closing?
             if( state == State.ClosingEventEnqueued

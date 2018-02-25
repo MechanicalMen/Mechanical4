@@ -30,5 +30,11 @@ namespace Mechanical4.EventQueue
         /// Gets the collection of event handlers.
         /// </summary>
         EventSubscriberCollection Subscribers { get; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the handling of enqueued events is currently allowed.
+        /// Suspension does not apply to event handling already in progress.
+        /// </summary>
+        bool IsSuspended { get; set; }
     }
 }

@@ -51,5 +51,27 @@ namespace Mechanical4.EventQueue.Tests
             Assert.Null(subscriber.LastEventHandled);
             Assert.False(queue.Subscribers.Add(new TestEventHandler(), useWeakRef: false));
         }
+
+        [Test]
+        public static void SuspensionDisablesHandling()
+        {
+            var queue = new TaskEventQueue();
+            Assert.False(queue.IsSuspended);
+
+            var subscriber = new TestEventHandler();
+            queue.Subscribers.Add(subscriber);
+            var evnt = new TestEvent();
+
+            queue.IsSuspended = true;
+            queue.Enqueue(evnt);
+            Thread.Sleep(SleepTime);
+            Assert.Null(subscriber.LastEventHandled);
+
+            queue.IsSuspended = false;
+            Thread.Sleep(SleepTime);
+            Assert.AreSame(evnt, subscriber.LastEventHandled);
+
+            queue.BeginClose();
+        }
     }
 }

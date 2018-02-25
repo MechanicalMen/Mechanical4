@@ -1,6 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Mechanical4.Core.Misc;
 using Mechanical4.EventQueue.Events;
 
 namespace Mechanical4.EventQueue
@@ -14,6 +15,7 @@ namespace Mechanical4.EventQueue
 
         private readonly ManualEventQueue manualQueue;
         private readonly ManualResetEventSlim newEventWaitHandle;
+        private readonly ThreadSafeBoolean isSuspended;
         private readonly Task task;
 
         #endregion
@@ -27,6 +29,7 @@ namespace Mechanical4.EventQueue
         {
             this.manualQueue = new ManualEventQueue();
             this.newEventWaitHandle = new ManualResetEventSlim(initialState: false); // nonsignaled, blocks
+            this.isSuspended = new ThreadSafeBoolean(false);
             this.task = Task.Factory.StartNew(this.Work, TaskCreationOptions.LongRunning);
         }
 
@@ -74,13 +77,42 @@ namespace Mechanical4.EventQueue
             [CallerLineNumber] int line = 0 )
         {
             this.manualQueue.Enqueue(evnt, critical, file, member, line);
-            this.newEventWaitHandle.Set(); // signaled, does not block
+
+            if( !this.IsSuspended )
+                this.newEventWaitHandle.Set(); // signaled, does not block
         }
 
         /// <summary>
         /// Gets the collection of event handlers.
         /// </summary>
         public EventSubscriberCollection Subscribers => this.manualQueue.Subscribers;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the handling of enqueued events is currently allowed.
+        /// Suspension does not apply to event handling already in progress.
+        /// </summary>
+        public bool IsSuspended
+        {
+            get => this.isSuspended.GetCopy();
+            set
+            {
+                this.isSuspended.Set(value, out bool oldValue);
+                if( oldValue != value )
+                {
+                    // value changed
+                    if( value )
+                    {
+                        // suspend
+                        this.newEventWaitHandle.Reset(); // nonsignaled, blocks
+                    }
+                    else
+                    {
+                        // resume
+                        this.newEventWaitHandle.Set(); // signaled, does not block
+                    }
+                }
+            }
+        }
 
         #endregion
 

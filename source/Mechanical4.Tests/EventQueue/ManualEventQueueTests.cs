@@ -256,5 +256,25 @@ namespace Mechanical4.EventQueue.Tests
             Assert.True(queue.Subscribers.Remove<DescendantEvent>());
             Assert.False(queue.Subscribers.Remove<DescendantEvent>());
         }
+
+        [Test]
+        public static void SuspensionDisablesHandling()
+        {
+            var queue = new ManualEventQueue();
+            Assert.False(queue.IsSuspended);
+
+            var testListener = new TestEventHandler();
+            queue.Subscribers.Add(testListener);
+            var evnt = new TestEvent();
+            queue.Enqueue(evnt);
+
+            queue.IsSuspended = true;
+            Assert.False(queue.HandleNext());
+            Assert.Null(testListener.LastEventHandled);
+
+            queue.IsSuspended = false;
+            Assert.True(queue.HandleNext());
+            Assert.AreSame(evnt, testListener.LastEventHandled);
+        }
     }
 }
