@@ -4,7 +4,6 @@ using System.Runtime.CompilerServices;
 using Mechanical4.Core;
 using Mechanical4.Core.Misc;
 using Mechanical4.EventQueue.Events;
-using Mechanical4.EventQueue.Serialization;
 
 namespace Mechanical4.EventQueue
 {
@@ -83,9 +82,6 @@ namespace Mechanical4.EventQueue
         internal static void SetMetaData( EventBase evnt, string file, string member, int line )
         {
             evnt.EventEnqueuePos = FileLine.Compact(file, member, line);
-
-            if( evnt is SerializableEventBase se )
-                se.EventEnqueueTime = DateTime.UtcNow;
         }
 
         internal static Exception HandleEvent( EventBase evnt, EventSubscriberCollection subscribers, List<Exception> eventHandlerExceptions )

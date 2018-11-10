@@ -1,14 +1,12 @@
 ﻿using System;
-using Mechanical4.EventQueue.Serialization;
 
 namespace Mechanical4.EventQueue.Events
 {
     /// <summary>
-    /// A critical event version of <see cref="UnhandledExceptionEvent"/>.
-    /// Use with an applicable event queue (e.g. <see cref="MainEventQueue"/>),
-    /// when the exception needs to be handled immediately and quickly
-    /// (e.g. the application is about to terminate due to this exception).
     /// Use <see cref="UnhandledExceptionEvent"/>, unless you absolutely need this.
+    /// Mainly for when the application is about to terminate due to an exception.
+    /// Critical events need to be handled very quickly (see <see cref="ICriticalEvent"/>),
+    /// and can only be handled by special event queues (e.g. <see cref="MainEventQueue"/>).
     /// </summary>
     public class CriticalUnhandledExceptionEvent : UnhandledExceptionEvent, ICriticalEvent
     {
@@ -20,15 +18,6 @@ namespace Mechanical4.EventQueue.Events
         /// <param name="exception">The exception to report.</param>
         public CriticalUnhandledExceptionEvent( Exception exception )
             : base(exception)
-        {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CriticalUnhandledExceptionEvent"/> class.
-        /// </summary>
-        /// <param name="reader">The <see cref="IEventReader"/> to deserialize from.</param>
-        public CriticalUnhandledExceptionEvent( IEventReader reader )
-            : base(reader)
         {
         }
     }

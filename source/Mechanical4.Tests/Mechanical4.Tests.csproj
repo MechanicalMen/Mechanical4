@@ -62,10 +62,6 @@
     <Compile Include="EventQueue\DelegateEventHandlerTests.cs" />
     <Compile Include="EventQueue\MainEventQueueTests.cs" />
     <Compile Include="EventQueue\ManualEventQueueTests.cs" />
-    <Compile Include="EventQueue\Serialization\BinaryEventStreamTests.cs" />
-    <Compile Include="EventQueue\Serialization\EventQueueSerializationTests.cs" />
-    <Compile Include="EventQueue\Serialization\JsonEventStreamTests.cs" />
-    <Compile Include="EventQueue\Serialization\VariableLengthUIntTests.cs" />
     <Compile Include="EventQueue\TaskEventQueueTests.cs" />
     <Compile Include="EventQueue\TestEvent.cs" />
     <Compile Include="EventQueue\TestEventHandler.cs" />

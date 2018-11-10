@@ -5,7 +5,6 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Mechanical4.EventQueue.Serialization;
 using Mechanical4.Core;
 
 namespace Mechanical4.EventQueue.Events
@@ -13,7 +12,7 @@ namespace Mechanical4.EventQueue.Events
     /// <summary>
     /// Serializes an exception to a string.
     /// </summary>
-    public class UnhandledExceptionEvent : SerializableEventBase
+    public class UnhandledExceptionEvent : EventBase
     {
         #region Private Fields
 
@@ -193,39 +192,6 @@ namespace Mechanical4.EventQueue.Events
         public override string ToString()
         {
             return this.fullString;
-        }
-
-        #endregion
-
-        #region Serialization
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="UnhandledExceptionEvent"/> class.
-        /// </summary>
-        /// <param name="reader">The <see cref="IEventReader"/> to deserialize from.</param>
-        public UnhandledExceptionEvent( IEventReader reader )
-        {
-            if( reader.NullReference() )
-                throw Exc.Null(nameof(reader));
-
-            this.Initialize(
-                type: reader.ReadString(),
-                message: reader.ReadString(),
-                full: reader.ReadString());
-        }
-
-        /// <summary>
-        /// Serializes the components of the event, other than <see cref="SerializableEventBase.EventEnqueueTime"/> and <see cref="EventBase.EventEnqueuePos"/>.
-        /// </summary>
-        /// <param name="writer">The <see cref="IEventWriter"/> to use.</param>
-        public override void Serialize( IEventWriter writer )
-        {
-            if( writer.NullReference() )
-                throw Exc.Null(nameof(writer));
-
-            writer.Write(this.Type);
-            writer.Write(this.Message);
-            writer.Write(this.ToString());
         }
 
         #endregion

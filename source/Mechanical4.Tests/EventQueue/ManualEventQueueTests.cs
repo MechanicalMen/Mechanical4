@@ -56,14 +56,10 @@ namespace Mechanical4.Tests.EventQueue
             var evnt = new NamedEvent("test");
 
             Assert.AreEqual(null, evnt.EventEnqueuePos);
-            Assert.AreEqual(DateTime.MinValue, evnt.EventEnqueueTime);
-            Assert.AreEqual(DateTimeKind.Unspecified, evnt.EventEnqueueTime.Date.Kind);
 
             queue.Enqueue(evnt);
 
             Assert.True(evnt.EventEnqueuePos.Contains(nameof(EnqueueUpdatesMetadata)));
-            Assert.AreEqual(DateTime.UtcNow.Date, evnt.EventEnqueueTime.Date);
-            Assert.AreEqual(DateTimeKind.Utc, evnt.EventEnqueueTime.Date.Kind);
         }
 
         [Test]
