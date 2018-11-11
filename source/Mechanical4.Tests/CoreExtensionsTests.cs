@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using Mechanical4.Core;
 using NUnit.Framework;
 
-namespace Mechanical4.Tests.Core
+namespace Mechanical4.Tests
 {
     [TestFixture]
     public static class CoreExtensionsTests

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 
-namespace Mechanical4.Core.Misc
+namespace Mechanical4.Misc
 {
     /// <summary>
     /// Mimics a <see cref="Boolean"/> variable, in a thread-safe manner.

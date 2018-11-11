@@ -5,11 +5,11 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DocumentationFile>bin\Debug\netstandard1.0\Mechanical4.Core.xml</DocumentationFile>
+    <DocumentationFile>bin\Debug\netstandard1.0\Mechanical4.xml</DocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <DocumentationFile>bin\Release\netstandard1.0\Mechanical4.Core.xml</DocumentationFile>
+    <DocumentationFile>bin\Release\netstandard1.0\Mechanical4.xml</DocumentationFile>
   </PropertyGroup>
 
 </Project>

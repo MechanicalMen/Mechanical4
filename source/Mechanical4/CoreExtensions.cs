@@ -4,12 +4,12 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using Mechanical4.Core.Misc;
+using Mechanical4.Misc;
 
-namespace Mechanical4.Core
+namespace Mechanical4
 {
     /// <summary>
-    /// Extension methods for the <see cref="Mechanical4.Core"/> namespace.
+    /// Extension methods for the <see cref="Mechanical4"/> namespace.
     /// </summary>
     public static class CoreExtensions
     {

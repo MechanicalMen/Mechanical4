@@ -3,10 +3,9 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Mechanical4.Core;
 using NUnit.Framework;
 
-namespace Mechanical4.Tests.Core
+namespace Mechanical4.Tests
 {
     [TestFixture]
     public static class DisposableTests

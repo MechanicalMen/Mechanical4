@@ -1,4 +1,4 @@
-﻿namespace Mechanical4.Core.Misc
+﻿namespace Mechanical4.Misc
 {
     /// <summary>
     /// Converts from type <typeparamref name="T"/> to <see cref="string"/>.

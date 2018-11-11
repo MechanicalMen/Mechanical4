@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Globalization;
 using System.Linq;
-using Mechanical4.Core.Misc;
+using Mechanical4.Misc;
 using NUnit.Framework;
 
-namespace Mechanical4.Tests.Core.Misc
+namespace Mechanical4.Tests.Misc
 {
     [TestFixture]
     public static class CommonStringConverterTests

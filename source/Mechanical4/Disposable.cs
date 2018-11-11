@@ -2,7 +2,7 @@
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-namespace Mechanical4.Core
+namespace Mechanical4
 {
     /// <summary>
     /// Helps implementing <see cref="IDisposable"/>.

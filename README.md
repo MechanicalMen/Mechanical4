@@ -1,7 +1,7 @@
 Mechanical4
 ===========
 
-Mechanical4.Core
+Mechanical4
 ----------------
 A small "bag of tricks", commonly used in other Mechanical4 libraries. 
 

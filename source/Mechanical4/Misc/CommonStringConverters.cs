@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Globalization;
 
-namespace Mechanical4.Core.Misc
+namespace Mechanical4.Misc
 {
     /// <summary>
     /// <see cref="IStringConverter{T}"/> implementations for the most commonly used types.

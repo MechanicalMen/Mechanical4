@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 
-namespace Mechanical4.Core
+namespace Mechanical4
 {
     /// <summary>
     /// Helps throw common exceptions.

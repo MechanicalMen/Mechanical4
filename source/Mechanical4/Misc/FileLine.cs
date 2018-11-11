@@ -2,7 +2,7 @@
 using System.Globalization;
 using System.Runtime.CompilerServices;
 
-namespace Mechanical4.Core.Misc
+namespace Mechanical4.Misc
 {
     /// <summary>
     /// Combines file, member and line information into a single string.

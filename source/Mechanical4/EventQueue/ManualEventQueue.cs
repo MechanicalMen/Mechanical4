@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using Mechanical4.Core;
-using Mechanical4.Core.Misc;
+using Mechanical4.Misc;
 using Mechanical4.EventQueue.Events;
 
 namespace Mechanical4.EventQueue

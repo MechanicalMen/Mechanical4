@@ -52,16 +52,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Core\CoreExtensionsTests.cs" />
-    <Compile Include="Core\ExcTests.cs" />
-    <Compile Include="Core\DisposableTests.cs" />
-    <Compile Include="Core\Misc\CommonStringConverterTests.cs" />
-    <Compile Include="Core\Misc\FileLineTests.cs" />
+    <Compile Include="CoreExtensionsTests.cs" />
+    <Compile Include="ExcTests.cs" />
+    <Compile Include="DisposableTests.cs" />
+    <Compile Include="Misc\CommonStringConverterTests.cs" />
+    <Compile Include="Misc\FileLineTests.cs" />
     <Compile Include="EventQueue\BlockingEnqueueExtensionTests.cs" />
     <Compile Include="EventQueue\FeatureSuspenderTests.cs" />
     <Compile Include="EventQueue\EventSubscriberCollectionTests.cs" />
     <Compile Include="EventQueue\DelegateEventHandlerTests.cs" />
-    <Compile Include="EventQueue\MainEventQueueTests.cs" />
     <Compile Include="EventQueue\ManualEventQueueTests.cs" />
     <Compile Include="EventQueue\TaskEventQueueTests.cs" />
     <Compile Include="EventQueue\TestEvent.cs" />
@@ -76,9 +75,9 @@
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
-    <ProjectReference Include="..\Mechanical4.Core\Mechanical4.Core.csproj">
+    <ProjectReference Include="..\Mechanical4\Mechanical4.csproj">
       <Project>{877914d9-9ebd-4844-838a-f8dc0c7a9eb2}</Project>
-      <Name>Mechanical4.Core</Name>
+      <Name>Mechanical4</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
