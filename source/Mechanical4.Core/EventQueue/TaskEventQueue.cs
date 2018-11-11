@@ -1,7 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Mechanical4.Core.Misc;
 
 namespace Mechanical4.EventQueue
 {
@@ -14,8 +13,6 @@ namespace Mechanical4.EventQueue
 
         private readonly ManualEventQueue manualQueue;
         private readonly ManualResetEventSlim newEventWaitHandle;
-        private readonly ThreadSafeBoolean isSuspended;
-        private readonly Task task;
 
         #endregion
 
@@ -28,8 +25,10 @@ namespace Mechanical4.EventQueue
         {
             this.manualQueue = new ManualEventQueue();
             this.newEventWaitHandle = new ManualResetEventSlim(initialState: false); // nonsignaled, blocks
-            this.isSuspended = new ThreadSafeBoolean(false);
-            this.task = Task.Factory.StartNew(this.Work, TaskCreationOptions.LongRunning);
+            this.EventHandling = new FeatureSuspender(
+                onSuspended: this.SuspendTask,
+                onResumed: this.ResumeTask);
+            this.Task = Task.Factory.StartNew(this.Work, TaskCreationOptions.LongRunning);
         }
 
         #endregion
@@ -41,8 +40,8 @@ namespace Mechanical4.EventQueue
             while( true )
             {
                 // wait for the next Enqueue call
-                this.newEventWaitHandle.Wait(); // wait indefinitely
-                this.newEventWaitHandle.Reset(); // nonsignaled, blocks
+                this.newEventWaitHandle.Wait(); // wait indefinitely for events to be added
+                this.SuspendTask(); // wait again after we handled all available events
 
                 // handle all that we can
                 while( this.manualQueue.HandleNext() ) ;
@@ -53,6 +52,9 @@ namespace Mechanical4.EventQueue
             }
         }
 
+        private void SuspendTask() => this.newEventWaitHandle.Reset(); // nonsignaled, blocks
+        private void ResumeTask() => this.newEventWaitHandle.Set(); // signaled, does not block
+
         #endregion
 
         #region IEventQueue
@@ -60,9 +62,8 @@ namespace Mechanical4.EventQueue
         /// <summary>
         /// Enqueues an event, to be handled by subscribers sometime later.
         /// There is no guarantee that the event will end up being handled
-        /// (e.g. closed queues can not enqueue, and the application
-        /// may be terminated beforehand).
-        /// Suspended event queues can still enqueue events (see <see cref="IsSuspended"/>).
+        /// (e.g. suspended or closed queues silently ignore events,
+        /// or the application may be terminated beforehand).
         /// </summary>
         /// <param name="evnt">The event to enqueue.</param>
         /// <param name="file">The source file of the caller.</param>
@@ -76,8 +77,8 @@ namespace Mechanical4.EventQueue
         {
             this.manualQueue.Enqueue(evnt, file, member, line);
 
-            if( !this.IsSuspended )
-                this.newEventWaitHandle.Set(); // signaled, does not block
+            if( this.EventHandling.IsEnabled )
+                this.ResumeTask();
         }
 
         /// <summary>
@@ -86,31 +87,17 @@ namespace Mechanical4.EventQueue
         public EventSubscriberCollection Subscribers => this.manualQueue.Subscribers;
 
         /// <summary>
-        /// Gets or sets a value indicating whether the handling of enqueued events is currently allowed.
-        /// Suspension does not apply to event handling already in progress.
+        /// Gets the object managing whether the handling of events already in the queue can be started.
+        /// Does not affect event handling already in progress.
+        /// Does not affect the addition of events to the queue (i.e. <see cref="Enqueue"/>).
         /// </summary>
-        public bool IsSuspended
-        {
-            get => this.isSuspended.GetCopy();
-            set
-            {
-                this.isSuspended.Set(value, out bool oldValue);
-                if( oldValue != value )
-                {
-                    // value changed
-                    if( value )
-                    {
-                        // suspend
-                        this.newEventWaitHandle.Reset(); // nonsignaled, blocks
-                    }
-                    else
-                    {
-                        // resume
-                        this.newEventWaitHandle.Set(); // signaled, does not block
-                    }
-                }
-            }
-        }
+        public FeatureSuspender EventHandling { get; }
+
+        /// <summary>
+        /// Gets the object managing whether events are silently discarded, instead of being added to the queue.
+        /// This affects neither events already in the queue, nor their handling.
+        /// </summary>
+        public FeatureSuspender EventAdding => this.manualQueue.EventAdding;
 
         #endregion
 
@@ -119,7 +106,7 @@ namespace Mechanical4.EventQueue
         /// <summary>
         /// Gets the task doing the event processing.
         /// </summary>
-        public Task Task => this.task;
+        public Task Task { get; }
 
         #endregion
     }

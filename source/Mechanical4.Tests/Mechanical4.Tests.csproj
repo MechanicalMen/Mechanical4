@@ -58,6 +58,7 @@
     <Compile Include="Core\Misc\CommonStringConverterTests.cs" />
     <Compile Include="Core\Misc\FileLineTests.cs" />
     <Compile Include="EventQueue\BlockingEnqueueExtensionTests.cs" />
+    <Compile Include="EventQueue\FeatureSuspenderTests.cs" />
     <Compile Include="EventQueue\EventSubscriberCollectionTests.cs" />
     <Compile Include="EventQueue\DelegateEventHandlerTests.cs" />
     <Compile Include="EventQueue\MainEventQueueTests.cs" />
@@ -66,7 +67,6 @@
     <Compile Include="EventQueue\TestEvent.cs" />
     <Compile Include="EventQueue\TestEventHandler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TestCriticalEvent.cs" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
@@ -79,10 +79,6 @@
     <ProjectReference Include="..\Mechanical4.Core\Mechanical4.Core.csproj">
       <Project>{877914d9-9ebd-4844-838a-f8dc0c7a9eb2}</Project>
       <Name>Mechanical4.Core</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Mechanical4.EventQueue\Mechanical4.EventQueue.csproj">
-      <Project>{69642fcc-41b1-4996-b502-ad73a5db84da}</Project>
-      <Name>Mechanical4.EventQueue</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

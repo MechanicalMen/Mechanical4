@@ -19,17 +19,16 @@ namespace Mechanical4.EventQueue
         private enum State : int
         {
             Open,
-            ClosingEventEnqueued,
-            NoNewEventsAccepted,
-            Closed
+            ClosingEventEnqueued, // after the closing event was enqueued
+            NoNewEventsAccepted, // after the closing event was handled
+            Closed // after all events were handled
         }
 
-        private readonly object eventsLock = new object();
-        private readonly object eventHandlingLock = new object();
-        private readonly List<EventBase> normalEvents = new List<EventBase>();
+        private readonly object generalLock = new object();
+        private readonly object handleNextLock = new object();
+        private readonly List<EventBase> events = new List<EventBase>();
         private readonly List<Exception> eventHandlerExceptions = new List<Exception>();
         private State eventsState = State.Open;
-        private bool isSuspended = false;
 
         #endregion
 
@@ -38,9 +37,12 @@ namespace Mechanical4.EventQueue
         /// <summary>
         /// Initializes a new instance of the <see cref="ManualEventQueue"/> class.
         /// </summary>
-        public ManualEventQueue()
+        /// <param name="subscriberCollection">The <see cref="EventSubscriberCollection"/> to use, or <c>null</c> to create a new one.</param>
+        public ManualEventQueue( EventSubscriberCollection subscriberCollection = null )
         {
-            this.Subscribers = new EventSubscriberCollection();
+            this.Subscribers = subscriberCollection ?? new EventSubscriberCollection();
+            this.EventHandling = new FeatureSuspender();
+            this.EventAdding = new FeatureSuspender();
         }
 
         #endregion
@@ -50,9 +52,9 @@ namespace Mechanical4.EventQueue
         private bool ContainsEvent( EventBase evnt )
         {
             bool found = false;
-            foreach( var e in this.normalEvents )
+            foreach( var e in this.events )
             {
-                if( object.ReferenceEquals(e, evnt) )
+                if( ReferenceEquals(e, evnt) )
                 {
                     found = true;
                     break;
@@ -65,41 +67,15 @@ namespace Mechanical4.EventQueue
         private EventBase TakeNextEvent()
         {
             EventBase evnt = null;
-            if( this.normalEvents.Count != 0 )
+            if( this.events.Count != 0 )
             {
-                evnt = this.normalEvents[0];
-                this.normalEvents.RemoveAt(0);
+                evnt = this.events[0];
+                this.events.RemoveAt(0);
             }
             return evnt;
         }
 
-        private bool HasMoreEvents => this.normalEvents.Count > 0;
-
-        #endregion
-
-        #region Internal Methods
-
-        internal static void SetMetaData( EventBase evnt, string file, string member, int line )
-        {
-            evnt.EventEnqueuePos = FileLine.Compact(file, member, line);
-        }
-
-        internal static Exception HandleEvent( EventBase evnt, EventSubscriberCollection subscribers, List<Exception> eventHandlerExceptions )
-        {
-            subscribers.Handle(evnt, eventHandlerExceptions);
-            if( eventHandlerExceptions.Count != 0 )
-            {
-                var exception = new AggregateException(
-                    $"Unhandled exception(s) thrown, while handling an event ({evnt.ToString()}). The event was enqueued at: {evnt.EventEnqueuePos}.",
-                    eventHandlerExceptions.ToArray());
-                eventHandlerExceptions.Clear();
-                return exception;
-            }
-            else
-            {
-                return null;
-            }
-        }
+        private bool HasMoreEvents => this.events.Count > 0;
 
         #endregion
 
@@ -108,9 +84,8 @@ namespace Mechanical4.EventQueue
         /// <summary>
         /// Enqueues an event, to be handled by subscribers sometime later.
         /// There is no guarantee that the event will end up being handled
-        /// (e.g. closed queues can not enqueue, and the application
-        /// may be terminated beforehand).
-        /// Suspended event queues can still enqueue events (see <see cref="IsSuspended"/>).
+        /// (e.g. suspended or closed queues silently ignore events,
+        /// or the application may be terminated beforehand).
         /// </summary>
         /// <param name="evnt">The event to enqueue.</param>
         /// <param name="file">The source file of the caller.</param>
@@ -125,17 +100,15 @@ namespace Mechanical4.EventQueue
             if( evnt.NullReference() )
                 throw Exc.Null(nameof(evnt));
 
-            if( evnt is ICriticalEvent )
-                throw new ArgumentException("This event queue can not handle critical events!").StoreFileLine();
-
-            lock( this.eventsLock )
+            lock( this.generalLock )
             {
                 // already enqueued?
                 if( this.ContainsEvent(evnt) )
                     return;
 
                 // enqueue disabled?
-                if( (int)this.eventsState >= (int)State.NoNewEventsAccepted )
+                if( this.EventAdding.IsSuspended
+                 || (int)this.eventsState >= (int)State.NoNewEventsAccepted )
                     return;
 
                 // closing event?
@@ -147,8 +120,8 @@ namespace Mechanical4.EventQueue
                         this.eventsState = State.ClosingEventEnqueued;
                 }
 
-                SetMetaData(evnt, file, member, line);
-                this.normalEvents.Add(evnt);
+                evnt.EventEnqueuePos = FileLine.Compact(file, member, line);
+                this.events.Add(evnt);
             }
         }
 
@@ -158,22 +131,17 @@ namespace Mechanical4.EventQueue
         public EventSubscriberCollection Subscribers { get; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether the handling of enqueued events is currently allowed.
-        /// Suspension does not apply to event handling already in progress.
+        /// Gets the object managing whether the handling of events already in the queue can be started.
+        /// Does not affect event handling already in progress.
+        /// Does not affect the addition of events to the queue (i.e. <see cref="Enqueue"/>).
         /// </summary>
-        public bool IsSuspended
-        {
-            get
-            {
-                lock( this.eventsLock )
-                    return this.isSuspended;
-            }
-            set
-            {
-                lock( this.eventsLock )
-                    this.isSuspended = value;
-            }
-        }
+        public FeatureSuspender EventHandling { get; }
+
+        /// <summary>
+        /// Gets the object managing whether events are silently discarded, instead of being added to the queue.
+        /// This affects neither events already in the queue, nor their handling.
+        /// </summary>
+        public FeatureSuspender EventAdding { get; }
 
         #endregion
 
@@ -186,24 +154,24 @@ namespace Mechanical4.EventQueue
         {
             get
             {
-                lock( this.eventsLock )
+                lock( this.generalLock )
                     return this.eventsState == State.Closed;
             }
         }
 
         /// <summary>
-        /// Invokes the event handlers of the next event.
+        /// Invokes the event handlers of the next event, unless event handling is suspended.
         /// </summary>
         /// <param name="enqueueUnhandledExceptionEvent">If <c>true</c>, unhandled exceptions thrown by event handlers are collected an enqueued as a single <see cref="UnhandledExceptionEvent"/>. If <c>false</c>, all such exceptions are silently ignored.</param>
-        /// <returns><c>true</c> if there was an event to handle; <c>false</c> if there was no event available.</returns>
+        /// <returns><c>true</c> if there was an event to handle; <c>false</c> if there was no event available, or event handling was suspended.</returns>
         public bool HandleNext( bool enqueueUnhandledExceptionEvent = true )
         {
             // get next event
             EventBase evnt = null;
             var state = default(State); // keep compiler happy
-            lock( this.eventsLock )
+            lock( this.generalLock )
             {
-                if( !this.IsSuspended ) // we don't throw exceptions, because we may get suspended after this method is called, but before we check for suspension.
+                if( this.EventHandling.IsEnabled ) // we don't throw exceptions, because we may get suspended after this method is called, but before we check for suspension.
                 {
                     evnt = this.TakeNextEvent();
                     state = this.eventsState;
@@ -214,24 +182,29 @@ namespace Mechanical4.EventQueue
 
             // handle event
             Exception exception = null;
-            lock( this.eventHandlingLock )
-                exception = HandleEvent(evnt, this.Subscribers, this.eventHandlerExceptions);
+            lock( this.handleNextLock )
+                exception = EventSubscriberCollection.HandleEvent(evnt, this.Subscribers, this.eventHandlerExceptions);
 
-            // event queue closing?
+            // handle exception(s) thrown
+            if( exception.NotNullReference()
+             && enqueueUnhandledExceptionEvent )
+                this.Enqueue(new UnhandledExceptionEvent(exception));
+
+            // did we just handle a closing event?
             if( state == State.ClosingEventEnqueued
              && evnt is EventQueueClosingEvent closingEvent )
             {
-                lock( this.eventsLock )
+                lock( this.generalLock )
                 {
                     this.eventsState = State.NoNewEventsAccepted;
                     state = this.eventsState;
                 }
             }
 
-            // event queue closed?
+            // are we ready to close the event queue?
             if( state == State.NoNewEventsAccepted )
             {
-                lock( this.eventsLock )
+                lock( this.generalLock )
                 {
                     if( !this.HasMoreEvents )
                     {
@@ -244,11 +217,6 @@ namespace Mechanical4.EventQueue
                     }
                 }
             }
-
-            // handle exception
-            if( exception.NotNullReference()
-             && enqueueUnhandledExceptionEvent )
-                this.Enqueue(new UnhandledExceptionEvent(exception));
 
             return true;
         }

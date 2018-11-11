@@ -10,7 +10,7 @@ using Mechanical4.Core;
 namespace Mechanical4.EventQueue.Events
 {
     /// <summary>
-    /// Serializes an exception to a string.
+    /// Converts an exception into a string.
     /// </summary>
     public class UnhandledExceptionEvent : EventBase
     {
@@ -35,6 +35,29 @@ namespace Mechanical4.EventQueue.Events
                 type: exception.GetType().ToString(),
                 message: exception.Message,
                 full: ToString(exception));
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UnhandledExceptionEvent"/> class.
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="message"></param>
+        /// <param name="asString"></param>
+        public UnhandledExceptionEvent( string type, string message, string asString )
+        {
+            if( type.NullOrEmpty() )
+                throw new ArgumentException("Invalid type!");
+
+            if( message.NullOrEmpty() )
+                throw new ArgumentException("Invalid message!");
+
+            if( asString.NullOrEmpty() )
+                throw new ArgumentException("Invalid exception string!");
+
+            this.Initialize(
+                type.Trim(),
+                message.Trim(),
+                asString.Trim());
         }
 
         private void Initialize( string type, string message, string full )

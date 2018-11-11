@@ -29,7 +29,7 @@ namespace Mechanical4.Tests.EventQueue
 
         #region DescendantEvent, NamedEventHandler
 
-        private class DescendantEvent : NamedEvent
+        internal class DescendantEvent : NamedEvent
         {
             internal DescendantEvent()
                 : base("test")
@@ -37,7 +37,7 @@ namespace Mechanical4.Tests.EventQueue
             }
         }
 
-        private class AncestorEventHandler : IEventHandler<NamedEvent>
+        internal class AncestorEventHandler : IEventHandler<NamedEvent>
         {
             public EventBase LastEventHandled { get; private set; }
 
@@ -73,7 +73,7 @@ namespace Mechanical4.Tests.EventQueue
             Assert.False(queue.HandleNext());
 
             // enqueueing does not invoke handlers
-            queue.Subscribers.Add(subscriber);
+            queue.Subscribers.AddAll(subscriber);
             queue.Enqueue(evnt);
             Assert.Null(subscriber.LastEventHandled);
 
@@ -109,8 +109,8 @@ namespace Mechanical4.Tests.EventQueue
         {
             var queue = new ManualEventQueue();
             var testListener = new TestEventHandler();
-            queue.Subscribers.Add(testListener);
-            queue.Subscribers.Add(new EnqueuesEventOnClosing(queue), useWeakRef: false);
+            queue.Subscribers.AddAll(testListener);
+            queue.Subscribers.AddAll(new EnqueuesEventOnClosing(queue), weakRef: false);
 
             // enqueue closing event
             queue.BeginClose();
@@ -146,7 +146,7 @@ namespace Mechanical4.Tests.EventQueue
             Assert.False(queue.IsClosed);
 
             // removing all subscribers does not close the queue
-            queue.Subscribers.Add(new TestEventHandler(), useWeakRef: false);
+            queue.Subscribers.AddAll(new TestEventHandler(), weakRef: false);
             queue.Subscribers.Clear();
             Assert.False(queue.IsClosed);
 
@@ -155,7 +155,7 @@ namespace Mechanical4.Tests.EventQueue
             Assert.False(queue.IsClosed);
 
             // handling the closing event is not enough...
-            queue.Subscribers.Add(new EnqueuesEventOnClosing(queue), useWeakRef: false);
+            queue.Subscribers.AddAll(new EnqueuesEventOnClosing(queue), weakRef: false);
             Assert.True(queue.HandleNext());
             Assert.False(queue.IsClosed);
 
@@ -169,21 +169,22 @@ namespace Mechanical4.Tests.EventQueue
         public static void NoNewSubscriptionsAfterClosed()
         {
             var queue = new ManualEventQueue();
-            queue.Subscribers.Add(new TestEventHandler(), useWeakRef: false);
+            var handler = new TestEventHandler();
+            queue.Subscribers.AddAll(handler);
 
             queue.BeginClose();
             queue.HandleNext();
             Assert.True(queue.IsClosed);
-            Assert.False(queue.Subscribers.Remove<TestEvent>()); // closing the queue removes subscribers
-            Assert.False(queue.Subscribers.Add(new TestEventHandler(), useWeakRef: false));
+            Assert.False(queue.Subscribers.RemoveAll(handler)); // closing the queue removes subscribers
+            Assert.False(queue.Subscribers.AddAll(new TestEventHandler(), weakRef: false));
         }
 
         [Test]
-        public static void HandleAndRemoveAcceptTypeInheritance()
+        public static void HandleSupportsEventInheritance()
         {
             var queue = new ManualEventQueue();
             var subscriber = new AncestorEventHandler();
-            queue.Subscribers.Add(subscriber);
+            queue.Subscribers.AddAll(subscriber);
 
             // subscriber does not handle events not in it's inheritance tree
             queue.Enqueue(new TestEvent());
@@ -201,46 +202,47 @@ namespace Mechanical4.Tests.EventQueue
             queue.Enqueue(derivedEvent);
             queue.HandleNext();
             Assert.AreSame(derivedEvent, subscriber.LastEventHandled);
-
-            // Remove<T> preserves subscribers, if they can not handle the event
-            Assert.False(queue.Subscribers.Remove<TestEvent>());
-            Assert.False(queue.Subscribers.Remove<EventBase>());
-
-            // Remove<T> triggers on event type equality
-            Assert.True(queue.Subscribers.Remove<NamedEvent>());
-            Assert.False(queue.Subscribers.Remove<NamedEvent>());
-
-            // Remove<T> triggers on event type inheritance
-            queue.Subscribers.Add(subscriber);
-            Assert.True(queue.Subscribers.Remove<DescendantEvent>());
-            Assert.False(queue.Subscribers.Remove<DescendantEvent>());
         }
 
         [Test]
-        public static void SuspensionDisablesHandling()
+        public static void EventHandlingSuspension()
         {
             var queue = new ManualEventQueue();
-            Assert.False(queue.IsSuspended);
+            Assert.False(queue.EventHandling.IsSuspended);
 
             var testListener = new TestEventHandler();
-            queue.Subscribers.Add(testListener);
+            queue.Subscribers.AddAll(testListener);
             var evnt = new TestEvent();
             queue.Enqueue(evnt);
 
-            queue.IsSuspended = true;
+            queue.EventHandling.Suspend();
             Assert.False(queue.HandleNext());
             Assert.Null(testListener.LastEventHandled);
 
-            queue.IsSuspended = false;
+            queue.EventHandling.Resume();
             Assert.True(queue.HandleNext());
             Assert.AreSame(evnt, testListener.LastEventHandled);
         }
 
         [Test]
-        public static void CriticalEventsNotSupported()
+        public static void EventAddingSuspension()
         {
             var queue = new ManualEventQueue();
-            Assert.Throws<ArgumentException>(() => queue.Enqueue(new TestCriticalEvent()));
+            Assert.False(queue.EventHandling.IsSuspended);
+
+            var testListener = new TestEventHandler();
+            queue.Subscribers.AddAll(testListener);
+            var evnt = new TestEvent();
+
+            queue.EventAdding.Suspend();
+            queue.Enqueue(evnt);
+            Assert.False(queue.HandleNext());
+            Assert.Null(testListener.LastEventHandled);
+
+            queue.EventAdding.Resume();
+            queue.Enqueue(evnt);
+            Assert.True(queue.HandleNext());
+            Assert.AreSame(evnt, testListener.LastEventHandled);
         }
     }
 }

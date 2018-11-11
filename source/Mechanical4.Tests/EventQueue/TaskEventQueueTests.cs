@@ -21,7 +21,7 @@ namespace Mechanical4.Tests.EventQueue
         {
             var queue = new TaskEventQueue();
             var subscriber = new TestEventHandler();
-            queue.Subscribers.Add(subscriber);
+            queue.Subscribers.AddAll(subscriber);
 
             Thread.Sleep(SleepTime);
             Assert.True(IsRunning(queue));
@@ -41,7 +41,7 @@ namespace Mechanical4.Tests.EventQueue
         {
             var queue = new TaskEventQueue();
             var subscriber = new TestEventHandler();
-            queue.Subscribers.Add(subscriber);
+            queue.Subscribers.AddAll(subscriber);
 
             queue.BeginClose();
             Thread.Sleep(SleepTime);
@@ -50,36 +50,28 @@ namespace Mechanical4.Tests.EventQueue
             queue.Enqueue(new TestEvent());
             Thread.Sleep(SleepTime);
             Assert.Null(subscriber.LastEventHandled);
-            Assert.False(queue.Subscribers.Add(new TestEventHandler(), useWeakRef: false));
+            Assert.False(queue.Subscribers.AddAll(new TestEventHandler(), weakRef: false));
         }
 
         [Test]
-        public static void SuspensionDisablesHandling()
+        public static void EventHandlingSuspension()
         {
             var queue = new TaskEventQueue();
-            Assert.False(queue.IsSuspended);
+            Assert.False(queue.EventHandling.IsSuspended);
 
             var subscriber = new TestEventHandler();
-            queue.Subscribers.Add(subscriber);
+            queue.Subscribers.AddAll(subscriber);
             var evnt = new TestEvent();
 
-            queue.IsSuspended = true;
+            queue.EventHandling.Suspend();
             queue.Enqueue(evnt);
             Thread.Sleep(SleepTime);
             Assert.Null(subscriber.LastEventHandled);
 
-            queue.IsSuspended = false;
+            queue.EventHandling.Resume();
             Thread.Sleep(SleepTime);
             Assert.AreSame(evnt, subscriber.LastEventHandled);
 
-            queue.BeginClose();
-        }
-
-        [Test]
-        public static void CriticalEventsNotSupported()
-        {
-            var queue = new TaskEventQueue();
-            Assert.Throws<ArgumentException>(() => queue.Enqueue(new TestCriticalEvent()));
             queue.BeginClose();
         }
     }

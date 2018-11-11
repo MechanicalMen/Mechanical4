@@ -60,9 +60,8 @@ namespace Mechanical4.EventQueue
         /// <summary>
         /// Enqueues an event, to be handled by subscribers sometime later.
         /// There is no guarantee that the event will end up being handled
-        /// (e.g. closed queues can not enqueue, and the application
-        /// may be terminated beforehand).
-        /// Suspended event queues can still enqueue events (see <see cref="IEventQueue.IsSuspended"/>).
+        /// (e.g. suspended or closed queues silently ignore events,
+        /// or the application may be terminated beforehand).
         /// </summary>
         /// <param name="eventQueue">The event queue to add the event to.</param>
         /// <param name="evnt">The event to enqueue.</param>
@@ -79,7 +78,7 @@ namespace Mechanical4.EventQueue
         {
             var waitingEvent = new WaitingEvent();
             var waitingListener = new WaitingListener(eventQueue, waitingEvent.Index);
-            eventQueue.Subscribers.Add(waitingListener, useWeakRef: false);
+            eventQueue.Subscribers.Add(waitingListener, weakRef: false);
 
             eventQueue.Enqueue(evnt, file, member, line);
             eventQueue.Enqueue(waitingEvent, file, member, line);

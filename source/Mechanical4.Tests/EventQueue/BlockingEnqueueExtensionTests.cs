@@ -20,7 +20,6 @@ namespace Mechanical4.Tests.EventQueue
             Assert.True(task.IsCompleted);
 
             Assert.False(queue.HandleNext()); // queue empty
-            Assert.False(queue.Subscribers.Remove<EventBase>()); // subscriber of "waiting" event automatically removed
         }
     }
 }
