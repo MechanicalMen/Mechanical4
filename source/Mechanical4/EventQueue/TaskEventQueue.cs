@@ -69,16 +69,20 @@ namespace Mechanical4.EventQueue
         /// <param name="file">The source file of the caller.</param>
         /// <param name="member">The method or property name of the caller to this method.</param>
         /// <param name="line">The line number in <paramref name="file"/>.</param>
-        public void Enqueue(
+        /// <returns><c>true</c> if the event was enqueued successfully; otherwise, <c>false</c>.</returns>
+        public bool Enqueue(
             EventBase evnt,
             [CallerFilePath] string file = "",
             [CallerMemberName] string member = "",
             [CallerLineNumber] int line = 0 )
         {
-            this.manualQueue.Enqueue(evnt, file, member, line);
+            var eventAdded = this.manualQueue.Enqueue(evnt, file, member, line);
 
-            if( this.EventHandling.IsEnabled )
+            if( eventAdded
+             && this.EventHandling.IsEnabled )
                 this.ResumeTask();
+
+            return eventAdded;
         }
 
         /// <summary>

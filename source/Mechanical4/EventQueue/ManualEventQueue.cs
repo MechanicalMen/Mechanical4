@@ -90,7 +90,8 @@ namespace Mechanical4.EventQueue
         /// <param name="file">The source file of the caller.</param>
         /// <param name="member">The method or property name of the caller to this method.</param>
         /// <param name="line">The line number in <paramref name="file"/>.</param>
-        public void Enqueue(
+        /// <returns><c>true</c> if the event was enqueued successfully; otherwise, <c>false</c>.</returns>
+        public bool Enqueue(
             EventBase evnt,
             [CallerFilePath] string file = "",
             [CallerMemberName] string member = "",
@@ -103,24 +104,25 @@ namespace Mechanical4.EventQueue
             {
                 // already enqueued?
                 if( this.ContainsEvent(evnt) )
-                    return;
+                    return false;
 
                 // enqueue disabled?
                 if( this.EventAdding.IsSuspended
                  || (int)this.eventsState >= (int)State.NoNewEventsAccepted )
-                    return;
+                    return false;
 
                 // closing event?
                 if( evnt is EventQueueClosingEvent )
                 {
                     if( (int)this.eventsState >= (int)State.ClosingEventEnqueued )
-                        return; // another closing event already enqueued
+                        return false; // another closing event already enqueued
                     else
                         this.eventsState = State.ClosingEventEnqueued;
                 }
 
                 evnt.EventEnqueuePos = FileLine.Compact(file, member, line);
                 this.events.Add(evnt);
+                return true;
             }
         }
 

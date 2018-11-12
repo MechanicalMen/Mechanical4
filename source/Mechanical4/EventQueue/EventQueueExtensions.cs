@@ -15,13 +15,14 @@ namespace Mechanical4.EventQueue
         /// <param name="file">The source file of the caller.</param>
         /// <param name="member">The method or property name of the caller to this method.</param>
         /// <param name="line">The line number in <paramref name="file"/>.</param>
-        public static void BeginClose(
+        /// <returns><c>true</c> if the event was enqueued successfully; otherwise, <c>false</c>.</returns>
+        public static bool BeginClose(
             this IEventQueue eventQueue,
             [CallerFilePath] string file = "",
             [CallerMemberName] string member = "",
             [CallerLineNumber] int line = 0 )
         {
-            eventQueue.Enqueue(
+            return eventQueue.Enqueue(
                 new EventQueueClosingEvent(),
                 file,
                 member,

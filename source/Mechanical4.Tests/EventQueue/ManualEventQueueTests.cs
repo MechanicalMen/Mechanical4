@@ -244,5 +244,37 @@ namespace Mechanical4.Tests.EventQueue
             Assert.True(queue.HandleNext());
             Assert.AreSame(evnt, testListener.LastEventHandled);
         }
+
+        [Test]
+        public static void ReturnValue()
+        {
+            var queue = new ManualEventQueue();
+            var evnt = new TestEvent();
+
+            Assert.True(queue.Enqueue(evnt));
+
+            // adding the same event a second time
+            Assert.False(queue.Enqueue(evnt));
+
+            // handling it and adding it again is fine however
+            Assert.True(queue.HandleNext());
+            Assert.False(queue.HandleNext()); // verify that we only added it once
+            Assert.True(queue.Enqueue(evnt));
+
+            // adding suspension
+            queue.EventAdding.Suspend();
+            Assert.False(queue.Enqueue(new TestEvent()));
+            queue.EventAdding.Resume();
+            Assert.True(queue.Enqueue(new TestEvent()));
+
+            // handle all events
+            while( queue.HandleNext() ) ;
+
+            // add and handle closing event
+            Assert.True(queue.Enqueue(new EventQueueClosingEvent()));
+            Assert.False(queue.Enqueue(new EventQueueClosingEvent())); // another closing event is already enqueued
+            Assert.True(queue.HandleNext());
+            Assert.False(queue.Enqueue(new TestEvent())); // no more events of any kind can be added
+        }
     }
 }

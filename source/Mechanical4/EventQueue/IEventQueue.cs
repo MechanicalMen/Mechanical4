@@ -17,7 +17,8 @@ namespace Mechanical4.EventQueue
         /// <param name="file">The source file of the caller.</param>
         /// <param name="member">The method or property name of the caller to this method.</param>
         /// <param name="line">The line number in <paramref name="file"/>.</param>
-        void Enqueue(
+        /// <returns><c>true</c> if the event was enqueued successfully; otherwise, <c>false</c>.</returns>
+        bool Enqueue(
             EventBase evnt,
             [CallerFilePath] string file = "",
             [CallerMemberName] string member = "",
