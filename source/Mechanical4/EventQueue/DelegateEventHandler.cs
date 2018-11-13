@@ -40,7 +40,7 @@ namespace Mechanical4.EventQueue
         /// <param name="handler">The event handler delegate to use.</param>
         /// <param name="initialState">The initial internal state.</param>
         /// <returns>A new event handler instance.</returns>
-        public static IEventHandler<TEvent> Handle<TEvent, TState>( Func<TState, TEvent, TState> handler, TState initialState = default(TState) )
+        public static IEventHandler<TEvent> On<TEvent, TState>( Func<TState, TEvent, TState> handler, TState initialState = default(TState) )
             where TEvent : EventBase
         {
             return new FuncEventHandler<TEvent, TState>(handler, initialState);
@@ -52,13 +52,13 @@ namespace Mechanical4.EventQueue
         /// <typeparam name="TEvent">The type of events to handle instances of. The actual type of those instances may be a subclass of <typeparamref name="TEvent"/>.</typeparam>
         /// <param name="handler">The event handler delegate to use.</param>
         /// <returns>A new event handler instance.</returns>
-        public static IEventHandler<TEvent> Handle<TEvent>( Action<TEvent> handler )
+        public static IEventHandler<TEvent> On<TEvent>( Action<TEvent> handler )
             where TEvent : EventBase
         {
             if( handler.NullReference() )
                 throw Exc.Null(nameof(handler));
 
-            return Handle<TEvent, object>(
+            return On<TEvent, object>(
                 ( currentState, evnt ) =>
                 {
                     handler(evnt);
@@ -72,9 +72,9 @@ namespace Mechanical4.EventQueue
         /// </summary>
         /// <param name="handler">The event handler delegate to use.</param>
         /// <returns>A new event handler instance.</returns>
-        public static IEventHandler<UnhandledExceptionEvent> HandleException( Action<UnhandledExceptionEvent> handler )
+        public static IEventHandler<UnhandledExceptionEvent> OnException( Action<UnhandledExceptionEvent> handler )
         {
-            return Handle(handler);
+            return On(handler);
         }
 
         /// <summary>
@@ -82,9 +82,9 @@ namespace Mechanical4.EventQueue
         /// </summary>
         /// <param name="handler">The event handler delegate to use.</param>
         /// <returns>A new event handler instance.</returns>
-        public static IEventHandler<EventQueueClosingEvent> HandleClosing( Action<EventQueueClosingEvent> handler )
+        public static IEventHandler<EventQueueClosingEvent> OnClosing( Action<EventQueueClosingEvent> handler )
         {
-            return Handle(handler);
+            return On(handler);
         }
     }
 }

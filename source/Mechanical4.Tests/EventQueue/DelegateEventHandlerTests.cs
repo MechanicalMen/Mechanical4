@@ -15,7 +15,7 @@ namespace Mechanical4.Tests.EventQueue
 
             // create subscriber
             TestEvent lastEventHandled = null;
-            var subscriber = DelegateEventHandler.Handle<TestEvent>(evnt => lastEventHandled = evnt);
+            var subscriber = DelegateEventHandler.On<TestEvent>(evnt => lastEventHandled = evnt);
             queue.Subscribers.Add(subscriber);
 
             // enqueue and handle event
@@ -38,7 +38,7 @@ namespace Mechanical4.Tests.EventQueue
 
             // create subscriber
             TestEvent lastEventHandled = null;
-            var subscriber = DelegateEventHandler.Handle(
+            var subscriber = DelegateEventHandler.On(
                 ( int currentState, TestEvent evnt ) =>
                 {
                     lastEventHandled = evnt;
@@ -74,7 +74,7 @@ namespace Mechanical4.Tests.EventQueue
 
             // create subscriber
             UnhandledExceptionEvent lastEventHandled = null;
-            var subscriber = DelegateEventHandler.HandleException(evnt => lastEventHandled = evnt);
+            var subscriber = DelegateEventHandler.OnException(evnt => lastEventHandled = evnt);
             queue.Subscribers.Add(subscriber);
 
             // enqueue and handle event
@@ -97,7 +97,7 @@ namespace Mechanical4.Tests.EventQueue
 
             // create subscriber
             EventQueueClosingEvent lastEventHandled = null;
-            var subscriber = DelegateEventHandler.HandleClosing(evnt => lastEventHandled = evnt);
+            var subscriber = DelegateEventHandler.OnClosing(evnt => lastEventHandled = evnt);
             queue.Subscribers.Add(subscriber);
 
             // enqueue and handle event

@@ -42,6 +42,7 @@ namespace Mechanical4.EventQueue
             this.Subscribers = subscriberCollection ?? new EventSubscriberCollection();
             this.EventHandling = new FeatureSuspender();
             this.EventAdding = new FeatureSuspender();
+            this.RaiseUnhandledEvents = new FeatureSuspender();
         }
 
         #endregion
@@ -144,6 +145,13 @@ namespace Mechanical4.EventQueue
         /// </summary>
         public FeatureSuspender EventAdding { get; }
 
+        /// <summary>
+        /// Gets the object managing whether exceptions thrown by event handlers
+        /// are wrapped and raised as <see cref="UnhandledExceptionEvent"/>.
+        /// <see cref="EventAdding"/> must be enabled for this to work.
+        /// </summary>
+        public FeatureSuspender RaiseUnhandledEvents { get; }
+
         #endregion
 
         #region Public Members
@@ -163,9 +171,8 @@ namespace Mechanical4.EventQueue
         /// <summary>
         /// Invokes the event handlers of the next event, unless event handling is suspended.
         /// </summary>
-        /// <param name="enqueueUnhandledExceptionEvent">If <c>true</c>, unhandled exceptions thrown by event handlers are collected an enqueued as a single <see cref="UnhandledExceptionEvent"/>. If <c>false</c>, all such exceptions are silently ignored.</param>
         /// <returns><c>true</c> if there was an event to handle; <c>false</c> if there was no event available, or event handling was suspended.</returns>
-        public bool HandleNext( bool enqueueUnhandledExceptionEvent = true )
+        public bool HandleNext()
         {
             // get next event
             EventBase evnt = null;
@@ -181,15 +188,21 @@ namespace Mechanical4.EventQueue
             if( evnt.NullReference() )
                 return false;
 
-            // handle event
-            Exception exception = null;
+            // handle event and exceptions
             lock( this.handleNextLock )
-                exception = EventSubscriberCollection.HandleEvent(evnt, this.Subscribers, this.eventHandlerExceptions);
+            {
+                // let handlers get to work
+                this.Subscribers.Handle(evnt, this.eventHandlerExceptions);
 
-            // handle exception(s) thrown
-            if( exception.NotNullReference()
-             && enqueueUnhandledExceptionEvent )
-                this.Enqueue(new UnhandledExceptionEvent(exception));
+                // deal with exceptions thrown
+                if( this.eventHandlerExceptions.Count != 0
+                 && this.RaiseUnhandledEvents.IsEnabled )
+                {
+                    for( int i = 0; i < this.eventHandlerExceptions.Count; ++i )
+                        this.Enqueue(new UnhandledExceptionEvent(this.eventHandlerExceptions[i])); // addition may be suspended, or the functionality may be changed in the middle, we don't care
+                }
+                this.eventHandlerExceptions.Clear();
+            }
 
             // did we just handle a closing event?
             if( state == State.ClosingEventEnqueued

@@ -293,32 +293,6 @@ namespace Mechanical4.EventQueue
         #region Internal Members
 
         /// <summary>
-        /// Uses a subscriber list to handle an event.
-        /// Exceptions thrown are collected and returned.
-        /// </summary>
-        /// <param name="evnt">The event to have handled.</param>
-        /// <param name="subscribers">The subscriber list to handle the event with.</param>
-        /// <param name="eventHandlerExceptions">A list used to collect exceptions thrown by event handlers.</param>
-        /// <returns>Any exceptions thrown, or <c>null</c>.</returns>
-        internal static Exception HandleEvent( EventBase evnt, EventSubscriberCollection subscribers, List<Exception> eventHandlerExceptions )
-        {
-            eventHandlerExceptions.Clear();
-            subscribers.Handle(evnt, eventHandlerExceptions);
-            if( eventHandlerExceptions.Count != 0 )
-            {
-                var exception = new AggregateException(
-                    $"Unhandled exception(s) thrown, while handling an event ({evnt.ToString()}). The event was enqueued at: {evnt.EventEnqueuePos}.",
-                    eventHandlerExceptions.ToArray());
-                eventHandlerExceptions.Clear();
-                return exception;
-            }
-            else
-            {
-                return null;
-            }
-        }
-
-        /// <summary>
         /// Finds applicable subscribers, and has them handle the specified event, on the current thread.
         /// </summary>
         /// <param name="evnt">The event to handle.</param>

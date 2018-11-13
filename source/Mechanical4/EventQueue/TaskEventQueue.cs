@@ -1,6 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Mechanical4.EventQueue.Events;
 
 namespace Mechanical4.EventQueue
 {
@@ -102,6 +103,13 @@ namespace Mechanical4.EventQueue
         /// This affects neither events already in the queue, nor their handling.
         /// </summary>
         public FeatureSuspender EventAdding => this.manualQueue.EventAdding;
+
+        /// <summary>
+        /// Gets the object managing whether exceptions thrown by event handlers
+        /// are wrapped and raised as <see cref="UnhandledExceptionEvent"/>.
+        /// <see cref="EventAdding"/> must be enabled for this to work.
+        /// </summary>
+        public FeatureSuspender RaiseUnhandledEvents => this.manualQueue.RaiseUnhandledEvents;
 
         #endregion
 
