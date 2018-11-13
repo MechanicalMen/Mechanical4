@@ -10,22 +10,36 @@ namespace Mechanical4.Misc
     {
         //// NOTE: https://stackoverflow.com/questions/29411961/c-sharp-and-thread-safety-of-a-bool
 
+        #region Private Fields
+
         private const int FALSE = 0;
         private const int TRUE = 1;
 
         private int value = FALSE; // the default bool value
 
+        #endregion
+
+        #region Constructor
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ThreadSafeBoolean"/> class.
         /// </summary>
         /// <param name="initialValue">The initial value to hold.</param>
-        public ThreadSafeBoolean( bool initialValue = default(bool) )
+        public ThreadSafeBoolean( bool initialValue = default )
         {
             this.Set(initialValue);
         }
 
+        #endregion
+
+        #region Private Methods
+
         private static int Convert( bool value ) => value ? TRUE : FALSE;
         private static bool Convert( int value ) => value == TRUE ? true : false;
+
+        #endregion
+
+        #region Public Methods
 
         /// <summary>
         /// Gets a copy of the current value.
@@ -69,5 +83,7 @@ namespace Mechanical4.Misc
                     Convert(newValue),
                     Convert(comparand)));
         }
+
+        #endregion
     }
 }
