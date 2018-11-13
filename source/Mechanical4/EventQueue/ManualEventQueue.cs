@@ -8,8 +8,8 @@ namespace Mechanical4.EventQueue
 {
     /// <summary>
     /// A thread-safe implementation of <see cref="IEventQueue"/>.
-    /// Events are stored, until they are handled one-by-on using <see cref="HandleNext"/>.
-    /// Events are handled on the thread calling <see cref="HandleNext"/>, not the one calling <see cref="Enqueue"/>.
+    /// Events are stored, until they are handled one-by-on using <see cref="HandleNext()"/>.
+    /// Events are handled on the thread calling <see cref="HandleNext()"/>, not the one calling <see cref="Enqueue"/>.
     /// </summary>
     public class ManualEventQueue : IEventQueue
     {
@@ -174,6 +174,19 @@ namespace Mechanical4.EventQueue
         /// <returns><c>true</c> if there was an event to handle; <c>false</c> if there was no event available, or event handling was suspended.</returns>
         public bool HandleNext()
         {
+            return this.HandleNext(this.eventHandlerExceptions);
+        }
+
+        /// <summary>
+        /// Invokes the event handlers of the next event, unless event handling is suspended.
+        /// </summary>
+        /// <param name="exceptions">The list to store exceptions thrown by event handlers in. Does not affect the behavior of <see cref="RaiseUnhandledEvents"/>.</param>
+        /// <returns><c>true</c> if there was an event to handle; <c>false</c> if there was no event available, or event handling was suspended.</returns>
+        public bool HandleNext( List<Exception> exceptions )
+        {
+            if( exceptions.NullReference() )
+                throw Exc.Null(nameof(exceptions));
+
             // get next event
             EventBase evnt = null;
             var state = default(State); // keep compiler happy
@@ -192,16 +205,16 @@ namespace Mechanical4.EventQueue
             lock( this.handleNextLock )
             {
                 // let handlers get to work
-                this.Subscribers.Handle(evnt, this.eventHandlerExceptions);
+                exceptions.Clear();
+                this.Subscribers.Handle(evnt, exceptions);
 
                 // deal with exceptions thrown
-                if( this.eventHandlerExceptions.Count != 0
+                if( exceptions.Count != 0
                  && this.RaiseUnhandledEvents.IsEnabled )
                 {
-                    for( int i = 0; i < this.eventHandlerExceptions.Count; ++i )
-                        this.Enqueue(new UnhandledExceptionEvent(this.eventHandlerExceptions[i])); // addition may be suspended, or the functionality may be changed in the middle, we don't care
+                    for( int i = 0; i < exceptions.Count; ++i )
+                        this.Enqueue(new UnhandledExceptionEvent(exceptions[i])); // addition may be suspended, or the functionality may be changed in the middle, we don't care
                 }
-                this.eventHandlerExceptions.Clear();
             }
 
             // did we just handle a closing event?
