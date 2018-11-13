@@ -6,7 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace Mechanical4.EventQueue.Events
+namespace Mechanical4.EventQueue
 {
     /// <summary>
     /// Converts an exception into a string.

@@ -1,4 +1,4 @@
-﻿namespace Mechanical4.EventQueue.Events
+﻿namespace Mechanical4.EventQueue
 {
     /// <summary>
     /// This kind of event should be used very rarely, since usually different

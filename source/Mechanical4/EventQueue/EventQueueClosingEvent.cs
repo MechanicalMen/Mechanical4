@@ -1,4 +1,4 @@
-﻿namespace Mechanical4.EventQueue.Events
+﻿namespace Mechanical4.EventQueue
 {
     /// <summary>
     /// After this event has been handled, adding new events will have no effect.

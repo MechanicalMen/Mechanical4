@@ -1,7 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Mechanical4.EventQueue.Events;
 
 namespace Mechanical4.EventQueue
 {

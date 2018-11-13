@@ -1,5 +1,4 @@
 ﻿using System;
-using Mechanical4.EventQueue.Events;
 
 namespace Mechanical4.EventQueue
 {

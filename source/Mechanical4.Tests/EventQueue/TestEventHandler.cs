@@ -1,5 +1,4 @@
 ﻿using Mechanical4.EventQueue;
-using Mechanical4.EventQueue.Events;
 
 namespace Mechanical4.Tests.EventQueue
 {
