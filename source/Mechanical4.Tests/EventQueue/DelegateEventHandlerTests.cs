@@ -90,23 +90,46 @@ namespace Mechanical4.Tests.EventQueue
         }
 
         [Test]
-        public static void ClosingHandler()
+        public static void ShutdownRequestHandler()
         {
             var queue = new ManualEventQueue();
 
             // create subscriber
-            EventQueueClosingEvent lastEventHandled = null;
-            var subscriber = DelegateEventHandler.OnClosing(evnt => lastEventHandled = evnt);
+            ShutdownRequestEvent lastEventHandled = null;
+            var subscriber = DelegateEventHandler.OnShutdownRequest(evnt => lastEventHandled = evnt);
             queue.Subscribers.Add(subscriber);
 
             // enqueue and handle event
-            queue.BeginClose();
+            queue.RequestShutdown();
             Assert.Null(lastEventHandled);
             Assert.True(queue.HandleNext());
 
             // test subscriber
             Assert.NotNull(lastEventHandled);
-            Assert.True(queue.IsClosed);
+            Assert.True(queue.HandleNext()); // shutting down event
+            Assert.True(queue.HandleNext()); // shut down event
+            Assert.True(queue.IsShutDown);
+        }
+
+        [Test]
+        public static void ShuttingDownHandler()
+        {
+            var queue = new ManualEventQueue();
+
+            // create subscriber
+            ShuttingDownEvent lastEventHandled = null;
+            var subscriber = DelegateEventHandler.OnShuttingDown(evnt => lastEventHandled = evnt);
+            queue.Subscribers.Add(subscriber);
+
+            // enqueue and handle event
+            queue.BeginShutdown();
+            Assert.Null(lastEventHandled);
+            Assert.True(queue.HandleNext()); // shutting down event
+
+            // test subscriber
+            Assert.NotNull(lastEventHandled);
+            Assert.True(queue.HandleNext()); // shut down event
+            Assert.True(queue.IsShutDown);
         }
     }
 }

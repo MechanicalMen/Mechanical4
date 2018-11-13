@@ -17,9 +17,9 @@ namespace Mechanical4.EventQueue
         private enum State : int
         {
             Open,
-            ClosingEventEnqueued, // after the closing event was enqueued
-            NoNewEventsAccepted, // after the closing event was handled
-            Closed // after all events were handled
+            ShuttingDownEnqueued,
+            HandlingRemainingEvents, // after the shutting down event was handled
+            Shutdown // after all events were handled
         }
 
         private readonly object generalLock = new object();
@@ -27,6 +27,7 @@ namespace Mechanical4.EventQueue
         private readonly List<EventBase> events = new List<EventBase>();
         private readonly List<Exception> eventHandlerExceptions = new List<Exception>();
         private State eventsState = State.Open;
+        private bool shutdownRequestEnqueued = false;
 
         #endregion
 
@@ -76,6 +77,38 @@ namespace Mechanical4.EventQueue
 
         private bool HasMoreEvents => this.events.Count > 0;
 
+        private bool EnqueueIgnoringSuspension(
+            EventBase evnt,
+            [CallerFilePath] string file = "",
+            [CallerMemberName] string member = "",
+            [CallerLineNumber] int line = 0 )
+        {
+            // already enqueued?
+            if( this.ContainsEvent(evnt) )
+                return false;
+
+            // shutdown request event?
+            if( evnt is ShutdownRequestEvent )
+            {
+                if( this.shutdownRequestEnqueued // another request is already enqueued or being handled
+                 || ((int)this.eventsState >= (int)State.ShuttingDownEnqueued) ) // we are already shutting down, there is no question about it
+                    return false;
+                else
+                    this.shutdownRequestEnqueued = true;
+            }
+            else if( evnt is ShuttingDownEvent ) // shutting down event?
+            {
+                if( (int)this.eventsState >= (int)State.ShuttingDownEnqueued )
+                    return false; // another shutting down event already enqueued
+                else
+                    this.eventsState = State.ShuttingDownEnqueued;
+            }
+
+            evnt.EventEnqueuePos = FileLine.Compact(file, member, line);
+            this.events.Add(evnt);
+            return true;
+        }
+
         #endregion
 
         #region IEventQueue
@@ -83,7 +116,7 @@ namespace Mechanical4.EventQueue
         /// <summary>
         /// Enqueues an event, to be handled by subscribers sometime later.
         /// There is no guarantee that the event will end up being handled
-        /// (e.g. suspended or closed queues silently ignore events,
+        /// (e.g. suspended or shut down queues silently ignore events,
         /// or the application may be terminated beforehand).
         /// </summary>
         /// <param name="evnt">The event to enqueue.</param>
@@ -102,27 +135,11 @@ namespace Mechanical4.EventQueue
 
             lock( this.generalLock )
             {
-                // already enqueued?
-                if( this.ContainsEvent(evnt) )
-                    return false;
-
                 // enqueue disabled?
-                if( this.EventAdding.IsSuspended
-                 || (int)this.eventsState >= (int)State.NoNewEventsAccepted )
+                if( this.EventAdding.IsSuspended )
                     return false;
 
-                // closing event?
-                if( evnt is EventQueueClosingEvent )
-                {
-                    if( (int)this.eventsState >= (int)State.ClosingEventEnqueued )
-                        return false; // another closing event already enqueued
-                    else
-                        this.eventsState = State.ClosingEventEnqueued;
-                }
-
-                evnt.EventEnqueuePos = FileLine.Compact(file, member, line);
-                this.events.Add(evnt);
-                return true;
+                return this.EnqueueIgnoringSuspension(evnt, file, member, line);
             }
         }
 
@@ -156,14 +173,14 @@ namespace Mechanical4.EventQueue
         #region Public Members
 
         /// <summary>
-        /// Gets a value indicating whether this event queue is closed (see: <see cref="EventQueueClosingEvent"/>).
+        /// Gets a value indicating whether this event queue was shut down.
         /// </summary>
-        public bool IsClosed
+        public bool IsShutDown
         {
             get
             {
                 lock( this.generalLock )
-                    return this.eventsState == State.Closed;
+                    return this.eventsState == State.Shutdown;
             }
         }
 
@@ -200,6 +217,14 @@ namespace Mechanical4.EventQueue
             if( evnt.NullReference() )
                 return false;
 
+            // skip handling shutdown requests, if a shutting down event was already enqueued
+            if( (int)state >= (int)State.ShuttingDownEnqueued
+             && evnt is ShutdownRequestEvent )
+            {
+                exceptions.Clear();
+                return true; // there was an event found, and event handling was not suspended.
+            }
+
             // handle event and exceptions
             lock( this.handleNextLock )
             {
@@ -216,31 +241,39 @@ namespace Mechanical4.EventQueue
                 }
             }
 
-            // did we just handle a closing event?
-            if( state == State.ClosingEventEnqueued
-             && evnt is EventQueueClosingEvent closingEvent )
+            // was it a shutdown request?
+            if( evnt is ShutdownRequestEvent requestEvent )
             {
                 lock( this.generalLock )
                 {
-                    this.eventsState = State.NoNewEventsAccepted;
+                    this.shutdownRequestEnqueued = false;
+
+                    // unless it was cancelled, we begin shutting down
+                    if( !requestEvent.Cancel )
+                        this.EnqueueIgnoringSuspension(new ShuttingDownEvent()); // this is a special case where we ignore suspension of adding
+                }
+            }
+            else if( evnt is ShuttingDownEvent ) // was it a shutting down event?
+            {
+                lock( this.generalLock )
+                {
+                    this.EventAdding.Suspend();
+                    this.eventsState = State.HandlingRemainingEvents;
+                    this.EnqueueIgnoringSuspension(new ShutDownEvent()); // this is a special case where we ignore suspension of adding
                     state = this.eventsState;
                 }
             }
-
-            // are we ready to close the event queue?
-            if( state == State.NoNewEventsAccepted )
+            else if( evnt is ShutDownEvent ) // was it the last event?
             {
                 lock( this.generalLock )
                 {
-                    if( !this.HasMoreEvents )
-                    {
-                        // no new events will be added, and all events were handled:
-                        // remove current subscribers and do not accept others
-                        this.Subscribers.DisableAndClear();
+                    if( this.HasMoreEvents )
+                        throw new Exception("Invalid queue state: there should be no more events left! Did the event adding suppression somehow reset?");
 
-                        this.eventsState = State.Closed;
-                        state = this.eventsState;
-                    }
+                    // no new events will be added, and all events were handled:
+                    // remove current subscribers and do not accept others
+                    this.Subscribers.DisableAndClear();
+                    state = this.eventsState = State.Shutdown;
                 }
             }
 

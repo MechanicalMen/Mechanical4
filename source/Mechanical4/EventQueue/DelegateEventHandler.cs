@@ -39,7 +39,7 @@ namespace Mechanical4.EventQueue
         /// <param name="handler">The event handler delegate to use.</param>
         /// <param name="initialState">The initial internal state.</param>
         /// <returns>A new event handler instance.</returns>
-        public static IEventHandler<TEvent> On<TEvent, TState>( Func<TState, TEvent, TState> handler, TState initialState = default(TState) )
+        public static IEventHandler<TEvent> On<TEvent, TState>( Func<TState, TEvent, TState> handler, TState initialState = default )
             where TEvent : EventBase
         {
             return new FuncEventHandler<TEvent, TState>(handler, initialState);
@@ -77,11 +77,21 @@ namespace Mechanical4.EventQueue
         }
 
         /// <summary>
-        /// Creates a new, stateless event handler for <see cref="EventQueueClosingEvent"/>.
+        /// Creates a new, stateless event handler for <see cref="ShutdownRequestEvent"/>.
         /// </summary>
         /// <param name="handler">The event handler delegate to use.</param>
         /// <returns>A new event handler instance.</returns>
-        public static IEventHandler<EventQueueClosingEvent> OnClosing( Action<EventQueueClosingEvent> handler )
+        public static IEventHandler<ShutdownRequestEvent> OnShutdownRequest( Action<ShutdownRequestEvent> handler )
+        {
+            return On(handler);
+        }
+
+        /// <summary>
+        /// Creates a new, stateless event handler for <see cref="ShuttingDownEvent"/>.
+        /// </summary>
+        /// <param name="handler">The event handler delegate to use.</param>
+        /// <returns>A new event handler instance.</returns>
+        public static IEventHandler<ShuttingDownEvent> OnShuttingDown( Action<ShuttingDownEvent> handler )
         {
             return On(handler);
         }

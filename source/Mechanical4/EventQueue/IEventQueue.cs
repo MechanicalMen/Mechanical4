@@ -10,7 +10,7 @@ namespace Mechanical4.EventQueue
         /// <summary>
         /// Enqueues an event, to be handled by subscribers sometime later.
         /// There is no guarantee that the event will end up being handled
-        /// (e.g. suspended or closed queues silently ignore events,
+        /// (e.g. suspended or shut down queues silently ignore events,
         /// or the application may be terminated beforehand).
         /// </summary>
         /// <param name="evnt">The event to enqueue.</param>

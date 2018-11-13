@@ -1,5 +1,4 @@
-﻿using System;
-using Mechanical4.EventQueue;
+﻿using Mechanical4.EventQueue;
 using NUnit.Framework;
 
 namespace Mechanical4.Tests.EventQueue
@@ -7,25 +6,6 @@ namespace Mechanical4.Tests.EventQueue
     [TestFixture]
     public static class ManualEventQueueTests
     {
-        #region EnqueuesEventOnClosing
-
-        private class EnqueuesEventOnClosing : IEventHandler<EventQueueClosingEvent>
-        {
-            private readonly IEventQueue queue;
-
-            internal EnqueuesEventOnClosing( IEventQueue eq )
-            {
-                this.queue = eq ?? throw new ArgumentNullException(nameof(eq));
-            }
-
-            public void Handle( EventQueueClosingEvent evnt )
-            {
-                this.queue.Enqueue(new NamedEvent("closing event handler"));
-            }
-        }
-
-        #endregion
-
         #region DescendantEvent, NamedEventHandler
 
         internal class DescendantEvent : NamedEvent
@@ -54,10 +34,8 @@ namespace Mechanical4.Tests.EventQueue
             var queue = new ManualEventQueue();
             var evnt = new NamedEvent("test");
 
-            Assert.AreEqual(null, evnt.EventEnqueuePos);
-
-            queue.Enqueue(evnt);
-
+            Assert.Null(evnt.EventEnqueuePos);
+            Assert.True(queue.Enqueue(evnt));
             Assert.True(evnt.EventEnqueuePos.Contains(nameof(EnqueueUpdatesMetadata)));
         }
 
@@ -73,7 +51,7 @@ namespace Mechanical4.Tests.EventQueue
 
             // enqueueing does not invoke handlers
             queue.Subscribers.AddAll(subscriber);
-            queue.Enqueue(evnt);
+            Assert.True(queue.Enqueue(evnt));
             Assert.Null(subscriber.LastEventHandled);
 
             // invoking handlers is successful
@@ -104,78 +82,175 @@ namespace Mechanical4.Tests.EventQueue
         }
 
         [Test]
-        public static void EventsCanNotBeEnqueuedAfterClosing()
+        public static void EventsCanNotBeEnqueuedAfterShuttingDown()
         {
             var queue = new ManualEventQueue();
             var testListener = new TestEventHandler();
             queue.Subscribers.AddAll(testListener);
-            queue.Subscribers.AddAll(new EnqueuesEventOnClosing(queue), weakRef: false);
+            queue.Subscribers.Add(
+                DelegateEventHandler.OnShuttingDown(
+                    e => queue.Enqueue(new NamedEvent("shutting down event handler"))),
+                weakRef: false);
 
-            // enqueue closing event
-            queue.BeginClose();
+            // enqueue shutting down event
+            queue.BeginShutdown();
 
-            // can enqueue, after closing is enqueued, but before it is handled
-            queue.Enqueue(new TestEvent() { Value = 1 });
+            // can enqueue, after the shutting down event is enqueued, but before it is handled
+            Assert.True(queue.Enqueue(new TestEvent() { Value = 1 }));
 
-            // handle closing event
+            // handle shutting down event
             Assert.True(queue.HandleNext());
             Assert.Null(testListener.LastEventHandled);
 
-            // try to enqueue another event, after the closing event is handled:
+            // try to enqueue another event, after the shutting down event is handled:
             // it should have no effect
-            queue.Enqueue(new TestEvent() { Value = 2 });
+            Assert.False(queue.Enqueue(new TestEvent() { Value = 2 }));
 
             // handle first test event
             Assert.True(queue.HandleNext());
             Assert.AreEqual(1, ((TestEvent)testListener.LastEventHandled).Value);
 
-            // handle the event added in the closing handler
+            // handle the event added in the shutting down event handler
             Assert.True(queue.HandleNext());
             Assert.IsInstanceOf<NamedEvent>(testListener.LastEventHandled); // false for null
 
+            // handle hidden shut down event
+            Assert.True(queue.HandleNext());
+
             // nothing more to handle
-            Assert.True(queue.IsClosed);
+            Assert.True(queue.IsShutDown);
         }
 
         [Test]
-        public static void IsClosed()
+        public static void IsShutDown()
         {
             // initially open
             var queue = new ManualEventQueue();
-            Assert.False(queue.IsClosed);
+            Assert.False(queue.IsShutDown);
 
-            // removing all subscribers does not close the queue
+            // removing all subscribers does not shut down the queue
             queue.Subscribers.AddAll(new TestEventHandler(), weakRef: false);
             queue.Subscribers.Clear();
-            Assert.False(queue.IsClosed);
+            Assert.False(queue.IsShutDown);
 
-            // adding the closing event is not enough
-            queue.BeginClose();
-            Assert.False(queue.IsClosed);
+            // adding the shutting down event is not enough
+            queue.BeginShutdown();
+            Assert.False(queue.IsShutDown);
 
-            // handling the closing event is not enough...
-            queue.Subscribers.AddAll(new EnqueuesEventOnClosing(queue), weakRef: false);
+            // handling the shutting down event is not enough...
+            queue.Subscribers.Add(
+                DelegateEventHandler.OnShuttingDown(
+                    e => queue.Enqueue(new NamedEvent("shutting down event handler"))),
+                weakRef: false);
             Assert.True(queue.HandleNext());
-            Assert.False(queue.IsClosed);
+            Assert.False(queue.IsShutDown);
 
-            // ... but clearing the queue afterwards is
+            // handling the NamedEvent added in the ShuttingDownEvent handler, is not enough
             Assert.True(queue.HandleNext());
-            Assert.True(queue.IsClosed);
+            Assert.False(queue.IsShutDown);
+
+            // ... but handling the hidden ShutDownEvent is
+            Assert.True(queue.HandleNext());
+            Assert.True(queue.IsShutDown);
             Assert.False(queue.HandleNext());
         }
 
         [Test]
-        public static void NoNewSubscriptionsAfterClosed()
+        public static void NoNewSubscriptionsAfterShutdown()
         {
             var queue = new ManualEventQueue();
             var handler = new TestEventHandler();
             queue.Subscribers.AddAll(handler);
 
-            queue.BeginClose();
-            queue.HandleNext();
-            Assert.True(queue.IsClosed);
-            Assert.False(queue.Subscribers.RemoveAll(handler)); // closing the queue removes subscribers
+            queue.BeginShutdown();
+            Assert.True(queue.HandleNext()); // shutting down event
+            Assert.True(queue.HandleNext()); // shut down event
+            Assert.True(queue.IsShutDown);
+            Assert.False(queue.Subscribers.RemoveAll(handler)); // a shutdown queue has no subscribers
             Assert.False(queue.Subscribers.AddAll(new TestEventHandler(), weakRef: false));
+        }
+
+        [Test]
+        public static void ShutdownRequest_Cancelled()
+        {
+            var queue = new ManualEventQueue();
+            queue.Subscribers.Add(
+                DelegateEventHandler.OnShutdownRequest(
+                    e => e.Cancel = true),
+                weakRef: false);
+
+            // you can only add one request at a time
+            Assert.True(queue.RequestShutdown());
+            Assert.False(queue.RequestShutdown());
+
+            // cancel the request
+            Assert.True(queue.HandleNext());
+
+            // no shutting down event
+            Assert.False(queue.HandleNext());
+
+            // you can add another request, once the previous one is out of the queue
+            Assert.True(queue.RequestShutdown());
+            Assert.True(queue.HandleNext());
+            Assert.False(queue.HandleNext());
+        }
+
+        [Test]
+        public static void ShutdownRequest_NotCancelled()
+        {
+            var queue = new ManualEventQueue();
+
+            bool shuttingDownDetected = false;
+            queue.Subscribers.Add(
+                DelegateEventHandler.OnShuttingDown(
+                    e => shuttingDownDetected = true),
+                weakRef: false);
+
+            // requests are granted by default (Cancel is false)
+            Assert.True(queue.RequestShutdown());
+            Assert.True(queue.HandleNext()); // request event
+            Assert.False(shuttingDownDetected);
+            Assert.True(queue.HandleNext()); // shutting down event
+            Assert.True(shuttingDownDetected);
+            Assert.True(queue.HandleNext()); // shut down event
+            Assert.False(queue.HandleNext());
+            Assert.True(queue.IsShutDown);
+        }
+
+        [Test]
+        public static void ShutdownRequest_AfterShuttingDown()
+        {
+            // can not enqueue after shutting down event was enqueued
+            var queue = new ManualEventQueue();
+            Assert.True(queue.BeginShutdown());
+            Assert.False(queue.Enqueue(new ShutdownRequestEvent()));
+
+            // handling is skipped, if a shutting down event is enqueued beforehand
+            queue = new ManualEventQueue();
+
+            bool requestDetected = false;
+            queue.Subscribers.Add(
+                DelegateEventHandler.OnShutdownRequest(
+                    e => requestDetected = true),
+                weakRef: false);
+
+            Assert.True(queue.Enqueue(new ShutdownRequestEvent())); // enqueueing succeeds
+            Assert.True(queue.Enqueue(new ShuttingDownEvent())); // shutting down event added
+            Assert.False(requestDetected);
+            Assert.True(queue.HandleNext()); // the request was "handled" successfully
+            Assert.False(requestDetected); // but the handler was not actually invoked
+
+            // ensure there are no unexpected events in the queue, that could have shifted the position of the request event
+            Assert.True(queue.HandleNext()); // shutting down event
+            Assert.True(queue.HandleNext()); // shut down event
+            Assert.False(queue.HandleNext());
+            Assert.True(queue.IsShutDown);
+        }
+
+        [Test]
+        public static void ShutdownRequest_IgnoredAfterShuttingDown()
+        {
+            var queue = new ManualEventQueue();
         }
 
         [Test]
@@ -186,20 +261,20 @@ namespace Mechanical4.Tests.EventQueue
             queue.Subscribers.AddAll(subscriber);
 
             // subscriber does not handle events not in it's inheritance tree
-            queue.Enqueue(new TestEvent());
-            queue.HandleNext();
+            Assert.True(queue.Enqueue(new TestEvent()));
+            Assert.True(queue.HandleNext());
             Assert.Null(subscriber.LastEventHandled);
 
             // subscriber accepts event type it explicitly stated it would handle
             var namedEvent = new NamedEvent("name");
-            queue.Enqueue(namedEvent);
-            queue.HandleNext();
+            Assert.True(queue.Enqueue(namedEvent));
+            Assert.True(queue.HandleNext());
             Assert.AreSame(namedEvent, subscriber.LastEventHandled);
 
             // subscriber accepts event that inherit what it declared it would handle
             var derivedEvent = new DescendantEvent();
-            queue.Enqueue(derivedEvent);
-            queue.HandleNext();
+            Assert.True(queue.Enqueue(derivedEvent));
+            Assert.True(queue.HandleNext());
             Assert.AreSame(derivedEvent, subscriber.LastEventHandled);
         }
 
@@ -234,18 +309,18 @@ namespace Mechanical4.Tests.EventQueue
             var evnt = new TestEvent();
 
             queue.EventAdding.Suspend();
-            queue.Enqueue(evnt);
+            Assert.False(queue.Enqueue(evnt));
             Assert.False(queue.HandleNext());
             Assert.Null(testListener.LastEventHandled);
 
             queue.EventAdding.Resume();
-            queue.Enqueue(evnt);
+            Assert.True(queue.Enqueue(evnt));
             Assert.True(queue.HandleNext());
             Assert.AreSame(evnt, testListener.LastEventHandled);
         }
 
         [Test]
-        public static void ReturnValue()
+        public static void EnqueueReturnValue()
         {
             var queue = new ManualEventQueue();
             var evnt = new TestEvent();
@@ -269,9 +344,9 @@ namespace Mechanical4.Tests.EventQueue
             // handle all events
             while( queue.HandleNext() ) ;
 
-            // add and handle closing event
-            Assert.True(queue.Enqueue(new EventQueueClosingEvent()));
-            Assert.False(queue.Enqueue(new EventQueueClosingEvent())); // another closing event is already enqueued
+            // add and handle shutting down event
+            Assert.True(queue.Enqueue(new ShuttingDownEvent()));
+            Assert.False(queue.Enqueue(new ShuttingDownEvent())); // another shutting down event is already enqueued
             Assert.True(queue.HandleNext());
             Assert.False(queue.Enqueue(new TestEvent())); // no more events of any kind can be added
         }

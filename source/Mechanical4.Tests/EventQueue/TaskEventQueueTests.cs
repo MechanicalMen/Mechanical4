@@ -17,7 +17,7 @@ namespace Mechanical4.Tests.EventQueue
         }
 
         [Test]
-        public static void EmptyingQueueDoesNotCloseIt()
+        public static void EmptyingQueueDoesNotShutItDown()
         {
             var queue = new TaskEventQueue();
             var subscriber = new TestEventHandler();
@@ -31,7 +31,7 @@ namespace Mechanical4.Tests.EventQueue
             Assert.NotNull(subscriber.LastEventHandled);
             Assert.True(IsRunning(queue));
 
-            queue.BeginClose();
+            queue.BeginShutdown();
             Thread.Sleep(SleepTime);
             Assert.False(IsRunning(queue));
         }
@@ -43,7 +43,7 @@ namespace Mechanical4.Tests.EventQueue
             var subscriber = new TestEventHandler();
             queue.Subscribers.AddAll(subscriber);
 
-            queue.BeginClose();
+            queue.BeginShutdown();
             Thread.Sleep(SleepTime);
             Assert.False(IsRunning(queue));
 
@@ -72,7 +72,7 @@ namespace Mechanical4.Tests.EventQueue
             Thread.Sleep(SleepTime);
             Assert.AreSame(evnt, subscriber.LastEventHandled);
 
-            queue.BeginClose();
+            queue.BeginShutdown();
         }
     }
 }

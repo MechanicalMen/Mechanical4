@@ -59,12 +59,12 @@ namespace Mechanical4.EventQueue
         /// <summary>
         /// Enqueues an event, to be handled by subscribers sometime later.
         /// There is no guarantee that the event will end up being handled
-        /// (e.g. suspended or closed queues silently ignore events,
+        /// (e.g. suspended or shut down queues silently ignore events,
         /// or the application may be terminated beforehand).
         /// </summary>
         /// <param name="eventQueue">The event queue to add the event to.</param>
         /// <param name="evnt">The event to enqueue.</param>
-        /// <param name="onHandled">An optional delegate to invoke sometime after the event finished being handled. It may not get called, if the event queue is suspended or being closed. Check the return value to know whether you can reasonably expect it.</param>
+        /// <param name="onHandled">An optional delegate to invoke sometime after the event finished being handled. It may not get called, if the event queue is suspended or being shut down. Check the return value to know whether you can reasonably expect it.</param>
         /// <param name="file">The source file of the caller.</param>
         /// <param name="member">The method or property name of the caller to this method.</param>
         /// <param name="line">The line number in <paramref name="file"/>.</param>

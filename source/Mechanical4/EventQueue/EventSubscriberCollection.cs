@@ -7,7 +7,7 @@ namespace Mechanical4.EventQueue
 {
     /// <summary>
     /// A thread-safe collection of event subscribers.
-    /// Once the event queue is closed,
+    /// Once the event queue is shut down,
     /// subscribers are automatically released,
     /// and further method calls will have no effect.
     /// </summary>
