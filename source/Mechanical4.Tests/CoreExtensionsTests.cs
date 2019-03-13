@@ -268,8 +268,8 @@ namespace Mechanical4.Tests
             pairs = e.GetPairs();
             Assert.NotNull(pairs);
             Assert.AreEqual(1, pairs.Length);
-            Assert.True(string.Equals("key", pairs[0].Key, StringComparison.Ordinal));
-            Assert.True(string.Equals("value", pairs[0].Value, StringComparison.Ordinal));
+            Test.OrdinalEquals("key", pairs[0].Key);
+            Test.OrdinalEquals("value", pairs[0].Value);
 
             // int-string
             e = new Exception();
@@ -300,14 +300,14 @@ namespace Mechanical4.Tests
             var e = new Exception();
             e.StoreFileLine("f", "m", 1);
             var pairs = e.GetPairs();
-            Assert.True(string.Equals("PartialStackTrace", pairs[0].Key, StringComparison.Ordinal));
-            Assert.True(string.Equals("m, f:1", pairs[0].Value, StringComparison.Ordinal));
+            Test.OrdinalEquals("PartialStackTrace", pairs[0].Key);
+            Test.OrdinalEquals("m, f:1", pairs[0].Value);
 
             // second call (same member)
             e.StoreFileLine("f", "m", 10);
             pairs = e.GetPairs();
-            Assert.True(string.Equals("PartialStackTrace", pairs[0].Key, StringComparison.Ordinal));
-            Assert.True(string.Equals("m, f:10\r\nm, f:1", pairs[0].Value, StringComparison.Ordinal));
+            Test.OrdinalEquals("PartialStackTrace", pairs[0].Key);
+            Test.OrdinalEquals("m, f:10\r\nm, f:1", pairs[0].Value);
         }
 
         [Test]
@@ -326,14 +326,14 @@ namespace Mechanical4.Tests
             e.Store("key", "value", "f", "m", 1);
             var pairs = e.GetPairs();
             Assert.AreEqual(2, pairs.Length);
-            Assert.True(string.Equals("value", get(e, "key"), StringComparison.Ordinal));
-            Assert.True(string.Equals("m, f:1", get(e, "PartialStackTrace"), StringComparison.Ordinal));
+            Test.OrdinalEquals("value", get(e, "key"));
+            Test.OrdinalEquals("m, f:1", get(e, "PartialStackTrace"));
 
             // second Store, with a different key, adds only one new key
             e.Store("Key", "Value");
             pairs = e.GetPairs();
             Assert.AreEqual(3, pairs.Length);
-            Assert.True(string.Equals("Value", get(e, "Key"), StringComparison.Ordinal));
+            Test.OrdinalEquals("Value", get(e, "Key"));
 
             // 2x Store, same key --> second key automatically changed
             e = new Exception();
@@ -341,26 +341,26 @@ namespace Mechanical4.Tests
             e.Store("key", "value2");
             pairs = e.GetPairs();
             Assert.AreEqual(3, pairs.Length);
-            Assert.True(string.Equals("value", get(e, "key"), StringComparison.Ordinal));
-            Assert.True(string.Equals("value2", get(e, "key2"), StringComparison.Ordinal));
+            Test.OrdinalEquals("value", get(e, "key"));
+            Test.OrdinalEquals("value2", get(e, "key2"));
 
             // 2x Store, same member --> single line PartialStackTrace
             e = new Exception();
             e.Store("key", "value", "f", "m", 1);
             e.Store("key", "value", "f", "m", 2);
-            Assert.True(string.Equals("m, f:1", get(e, "PartialStackTrace"), StringComparison.Ordinal));
+            Test.OrdinalEquals("m, f:1", get(e, "PartialStackTrace"));
 
             // 2x Store, different member (file name) --> multi line PartialStackTrace
             e = new Exception();
             e.Store("key", "value", "f", "m", 1);
             e.Store("key", "value", "X", "m", 1);
-            Assert.True(string.Equals("m, X:1\r\nm, f:1", get(e, "PartialStackTrace"), StringComparison.Ordinal));
+            Test.OrdinalEquals("m, X:1\r\nm, f:1", get(e, "PartialStackTrace"));
 
             // 2x Store, different member (member name) --> multi line PartialStackTrace
             e = new Exception();
             e.Store("key", "value", "f", "m", 1);
             e.Store("key", "value", "f", "X", 1);
-            Assert.True(string.Equals("X, f:1\r\nm, f:1", get(e, "PartialStackTrace"), StringComparison.Ordinal));
+            Test.OrdinalEquals("X, f:1\r\nm, f:1", get(e, "PartialStackTrace"));
 
             // null key
             e = new Exception();
@@ -374,7 +374,7 @@ namespace Mechanical4.Tests
             // delegate Store
             e = new Exception();
             e.Store("key", () => "value");
-            Assert.True(string.Equals("value", get(e, "key"), StringComparison.Ordinal));
+            Test.OrdinalEquals("value", get(e, "key"));
 
             // null delegate
             e = new Exception();

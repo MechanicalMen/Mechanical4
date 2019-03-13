@@ -18,7 +18,7 @@ namespace Mechanical4.Tests.Misc
             Assert.NotNull(converter);
 
             string s = converter.ToString(value);
-            Assert.True(string.Equals(str, s, StringComparison.Ordinal));
+            Test.OrdinalEquals(str, s);
 
             T v;
             Assert.False(converter.TryParse(null, out v));

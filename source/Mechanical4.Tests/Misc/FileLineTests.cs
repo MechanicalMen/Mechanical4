@@ -73,13 +73,13 @@ namespace Mechanical4.Tests.Misc
         public static void ParseCompact()
         {
             FileLine.ParseCompact("Member, File.cs:5", out var file, out var member, out var line);
-            Assert.True(string.Equals("File.cs", file, StringComparison.Ordinal));
-            Assert.True(string.Equals("Member", member, StringComparison.Ordinal));
+            Test.OrdinalEquals("File.cs", file);
+            Test.OrdinalEquals("Member", member);
             Assert.AreEqual(5, line);
 
             FileLine.ParseCompact("Member,,Fi,:le::5", out file, out member, out line);
-            Assert.True(string.Equals(",Fi,:le:", file, StringComparison.Ordinal));
-            Assert.True(string.Equals("Member", member, StringComparison.Ordinal));
+            Test.OrdinalEquals(",Fi,:le:", file);
+            Test.OrdinalEquals("Member", member);
             Assert.AreEqual(5, line);
         }
     }
