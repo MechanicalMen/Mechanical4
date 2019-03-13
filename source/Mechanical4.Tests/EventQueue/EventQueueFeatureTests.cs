@@ -1,15 +1,15 @@
-﻿using Mechanical4.EventQueue;
+﻿using Mechanical4.EventQueue.Primitives;
 using NUnit.Framework;
 
 namespace Mechanical4.Tests.EventQueue
 {
     [TestFixture]
-    public static class FeatureSuspenderTests
+    public static class EventQueueFeatureTests
     {
         [Test]
         public static void SuspendResume()
         {
-            var feature = new FeatureSuspender();
+            var feature = new EventQueueFeature();
 
             // initially enabled
             Assert.True(feature.IsEnabled);
@@ -45,7 +45,7 @@ namespace Mechanical4.Tests.EventQueue
         public static void Callbacks()
         {
             int counter = 0;
-            var feature = new FeatureSuspender(
+            var feature = new EventQueueFeature(
                 onSuspended: () => ++counter,
                 onResumed: () => --counter);
             Assert.AreEqual(0, counter);

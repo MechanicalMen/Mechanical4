@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 
-namespace Mechanical4.EventQueue
+namespace Mechanical4.EventQueue.Primitives
 {
     /// <summary>
     /// A thread-safe collection of event subscribers.
@@ -14,97 +13,19 @@ namespace Mechanical4.EventQueue
     public class EventSubscriberCollection
     {
         //// NOTE: changing the collection, and the handling of events, are mutually exclusive
-
-        #region Event handler wrapping
-
-        //// NOTE: since we may want to use weak references for subscribers
-        ////       we will need to store a strong reference to something else.
-
-        //// NOTE: these wrap event handlers, but subscribers may implement more than one of those
-
-        private interface IEventHandlerWrapper
-        {
-            Type EventType { get; }
-            TypeInfo EventTypeInfo { get; }
-
-            bool? ReferenceEquals( object subscriber );
-            void Handle( EventBase evnt, out bool referenceFound );
-        }
-
-        private class StrongEventHandler<TEvent> : IEventHandlerWrapper
-            where TEvent : EventBase
-        {
-            private readonly IEventHandler<TEvent> strongRef;
-
-            internal StrongEventHandler( IEventHandler<TEvent> subscriber )
-            {
-                this.strongRef = subscriber ?? throw Exc.Null(nameof(subscriber));
-                this.EventType = typeof(TEvent);
-                this.EventTypeInfo = this.EventType.GetTypeInfo();
-            }
-
-            public Type EventType { get; }
-            public TypeInfo EventTypeInfo { get; }
-
-            public bool? ReferenceEquals( object subscriber )
-            {
-                return ReferenceEquals(this.strongRef, subscriber);
-            }
-
-            public void Handle( EventBase evnt, out bool referenceFound )
-            {
-                this.strongRef.Handle((TEvent)evnt);
-                referenceFound = true;
-            }
-        }
-
-        private class WeakEventHandler<TEvent> : IEventHandlerWrapper
-            where TEvent : EventBase
-        {
-            private readonly WeakReference<IEventHandler<TEvent>> weakRef;
-
-            internal WeakEventHandler( IEventHandler<TEvent> subscriber )
-            {
-                if( subscriber.NullReference() )
-                    throw Exc.Null(nameof(subscriber));
-
-                this.weakRef = new WeakReference<IEventHandler<TEvent>>(subscriber);
-                this.EventType = typeof(TEvent);
-                this.EventTypeInfo = this.EventType.GetTypeInfo();
-            }
-
-            public Type EventType { get; }
-            public TypeInfo EventTypeInfo { get; }
-
-            public bool? ReferenceEquals( object subscriber )
-            {
-                if( this.weakRef.TryGetTarget(out var strongRef) )
-                    return ReferenceEquals(strongRef, subscriber);
-                else
-                    return null;
-            }
-
-            public void Handle( EventBase evnt, out bool referenceFound )
-            {
-                referenceFound = this.weakRef.TryGetTarget(out var strongRef);
-                if( referenceFound )
-                    strongRef.Handle((TEvent)evnt);
-            }
-        }
-
-        #endregion
+        //// NOTE: event subscribers may implement more than one event handler
 
         #region Private Fields
 
         private readonly object syncLock = new object();
-        private readonly List<IEventHandlerWrapper> subscribers = new List<IEventHandlerWrapper>();
+        private readonly List<EventHandlerWrapper.IEventHandlerWrapper> subscribers = new List<EventHandlerWrapper.IEventHandlerWrapper>();
         private bool isClosed = false;
 
         #endregion
 
         #region Private Methods
 
-        private int IndexOfSubscriber( object subscriber, int startIndex )
+        private int IndexOfFirstEventHandler( object subscriber, int startIndex )
         {
             for( int i = startIndex; i < this.subscribers.Count; )
             {
@@ -120,20 +41,20 @@ namespace Mechanical4.EventQueue
                 else
                 {
                     // a weak reference that we lost
-                    this.subscribers.RemoveAt(i); // remove & continue
+                    this.subscribers.RemoveAt(i); // remove & continue with the next item
                 }
             }
             return -1;
         }
 
-        private int IndexOfEventHandler<TEvent>( IEventHandler<TEvent> eventHandler )
+        private int IndexOfSpecificEventHandler<TEvent>( IEventHandler<TEvent> eventHandler ) // reference equality is ambiguous if the subscriber implements more than one event handler
             where TEvent : EventBase
         {
             int index, startIndex = 0;
-            while( (index = this.IndexOfSubscriber(eventHandler, startIndex)) != -1 )
+            while( (index = this.IndexOfFirstEventHandler(eventHandler, startIndex)) != -1 )
             {
                 var wrapper = this.subscribers[index];
-                if( wrapper.EventType == typeof(TEvent) )
+                if( wrapper.EventHandlerEventType == typeof(TEvent) )
                 {
                     // reference + event type found
                     return index;
@@ -143,30 +64,13 @@ namespace Mechanical4.EventQueue
             return -1;
         }
 
-        private static Type[] GetHandledEventTypesOfSubscriber( Type subscriberType )
-        {
-            return subscriberType
-                .GetTypeInfo()
-                .ImplementedInterfaces
-                .Select(interfaceType => interfaceType.GetTypeInfo())
-                .Where(interfaceTypeInfo => interfaceTypeInfo.IsGenericType
-                                         && interfaceTypeInfo.GetGenericTypeDefinition() == typeof(IEventHandler<>))
-                .Select(interfaceTypeInfo => interfaceTypeInfo.GenericTypeArguments[0])
-                .ToArray();
-        }
-
-        private static bool CanHandle( IEventHandlerWrapper wrapper, TypeInfo eventTypeInfo )
-        {
-            return wrapper.EventTypeInfo.IsAssignableFrom(eventTypeInfo);
-        }
-
         #endregion
 
         #region Public Methods
 
         /// <summary>
         /// Registers a new event handler.
-        /// Any other event handlers that the <paramref name="eventHandler"/> parameter might implement, will be ignored.
+        /// Any other event handlers that the <paramref name="eventHandler"/> instance might implement, will be ignored.
         /// </summary>
         /// <typeparam name="TEvent">The type of event to add a handler for.</typeparam>
         /// <param name="eventHandler">The event handler to add.</param>
@@ -184,15 +88,11 @@ namespace Mechanical4.EventQueue
                     return false;
 
                 // do nothing if this handler is already registered
-                if( this.IndexOfEventHandler(eventHandler) != -1 )
+                if( this.IndexOfSpecificEventHandler<TEvent>(eventHandler) != -1 )
                     return false;
 
                 // wrap handler
-                IEventHandlerWrapper newWrapper;
-                if( weakRef )
-                    newWrapper = new WeakEventHandler<TEvent>(eventHandler);
-                else
-                    newWrapper = new StrongEventHandler<TEvent>(eventHandler);
+                var newWrapper = EventHandlerWrapper.Create<TEvent>(eventHandler, weakRef);
 
                 // register wrapper
                 this.subscribers.Add(newWrapper);
@@ -202,7 +102,8 @@ namespace Mechanical4.EventQueue
 
         /// <summary>
         /// Removes the specified event handler.
-        /// Any other event handlers that the <paramref name="eventHandler"/> parameter might implement, and may be registered as well, will be ignored.
+        /// Any other event handlers that the <paramref name="eventHandler"/> instance might implement,
+        /// which may or may not be registered as well, will be ignored.
         /// </summary>
         /// <typeparam name="TEvent">The type of event to remove a handler of.</typeparam>
         /// <param name="eventHandler">The event handler to remove.</param>
@@ -218,7 +119,7 @@ namespace Mechanical4.EventQueue
                 if( this.isClosed )
                     return false;
 
-                int index = this.IndexOfEventHandler(eventHandler);
+                int index = this.IndexOfSpecificEventHandler<TEvent>(eventHandler);
                 if( index != -1 )
                 {
                     this.subscribers.RemoveAt(index);
@@ -240,16 +141,8 @@ namespace Mechanical4.EventQueue
             if( subscriber.NullReference() )
                 throw Exc.Null(nameof(subscriber));
 
-            var eventTypes = GetHandledEventTypesOfSubscriber(subscriber.GetType());
-            var parameterList = new object[] { subscriber, weakRef };
-            var handlersAdded = false;
-            foreach( var t in eventTypes )
-            {
-                var genericMethodDefinition = typeof(EventSubscriberCollection).GetTypeInfo().GetDeclaredMethod(nameof(Add));
-                var method = genericMethodDefinition.MakeGenericMethod(t);
-                handlersAdded = (bool)method.Invoke(this, parameterList) || handlersAdded;
-            }
-            return handlersAdded;
+            var subscriberTypeInfo = EventSubscriberTypeInfo.AddOrGet(subscriber.GetType());
+            return subscriberTypeInfo.AddAll(this, subscriber, weakRef);
         }
 
         /// <summary>
@@ -262,16 +155,8 @@ namespace Mechanical4.EventQueue
             if( subscriber.NullReference() )
                 throw Exc.Null(nameof(subscriber));
 
-            var eventTypes = GetHandledEventTypesOfSubscriber(subscriber.GetType());
-            var parameterList = new object[] { subscriber };
-            var handlersRemoved = false;
-            foreach( var t in eventTypes )
-            {
-                var genericMethodDefinition = typeof(EventSubscriberCollection).GetTypeInfo().GetDeclaredMethod(nameof(Remove));
-                var method = genericMethodDefinition.MakeGenericMethod(t);
-                handlersRemoved = (bool)method.Invoke(this, parameterList) || handlersRemoved;
-            }
-            return handlersRemoved;
+            var subscriberTypeInfo = EventSubscriberTypeInfo.AddOrGet(subscriber.GetType());
+            return subscriberTypeInfo.RemoveAll(this, subscriber);
         }
 
         /// <summary>
@@ -299,13 +184,19 @@ namespace Mechanical4.EventQueue
         /// <param name="exceptions">Stores exceptions throws by event handlers.</param>
         protected internal void Handle( EventBase evnt, List<Exception> exceptions )
         {
+            if( evnt.NullReference() )
+                throw Exc.Null(nameof(evnt));
+
+            if( exceptions.NullReference() )
+                throw Exc.Null(nameof(exceptions));
+
             lock( this.syncLock )
             {
                 var eventTypeInfo = evnt.GetType().GetTypeInfo();
                 for( int i = 0; i < this.subscribers.Count; )
                 {
                     var wrapper = this.subscribers[i];
-                    if( CanHandle(wrapper, eventTypeInfo) )
+                    if( EventBase.CanHandle(wrapper.EventHandlerEventTypeInfo, eventTypeInfo) )
                     {
                         bool referenceFound = true;
                         try

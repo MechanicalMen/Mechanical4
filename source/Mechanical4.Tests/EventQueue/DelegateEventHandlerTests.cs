@@ -83,7 +83,7 @@ namespace Mechanical4.Tests.EventQueue
 
             // test subscriber
             Assert.NotNull(lastEventHandled);
-            Assert.True(string.Equals(lastEventHandled.Type, typeof(UnauthorizedAccessException).ToString(), StringComparison.Ordinal));
+            Test.OrdinalEquals(lastEventHandled.Type, typeof(UnauthorizedAccessException).ToString());
 
             // queue is empty again (no unhandled exceptions or anything else)
             Assert.False(queue.HandleNext());

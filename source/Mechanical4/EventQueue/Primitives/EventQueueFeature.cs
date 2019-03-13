@@ -1,14 +1,14 @@
 ﻿using System;
 
-namespace Mechanical4.EventQueue
+namespace Mechanical4.EventQueue.Primitives
 {
     /// <summary>
-    /// Allows keeping track of the availability of a feature,
-    /// when multiple sources may simultanously try to suspend it for a while.
+    /// Keeps track of the availability of a feature,
+    /// when multiple actors may simultanously try to suspend it for a while.
     /// Basically a wrapper around a reference counter.
     /// Thread-safe.
     /// </summary>
-    public class FeatureSuspender
+    public class EventQueueFeature
     {
         #region Private Fields
 
@@ -22,12 +22,12 @@ namespace Mechanical4.EventQueue
         #region Constructor
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="FeatureSuspender"/> class.
+        /// Initializes a new instance of the <see cref="EventQueueFeature"/> class.
         /// The feature is initially enabled.
         /// </summary>
         /// <param name="onSuspended">Invoked when the feature was suspended, from the suspending thread.</param>
         /// <param name="onResumed">Invoked when the feature was resumed, from the resuming thread.</param>
-        public FeatureSuspender( Action onSuspended = null, Action onResumed = null )
+        public EventQueueFeature( Action onSuspended = null, Action onResumed = null )
         {
             this.suspended = onSuspended;
             this.resumed = onResumed;

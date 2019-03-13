@@ -10,6 +10,9 @@ namespace Mechanical4.EventQueue
 {
     /// <summary>
     /// Converts an exception into a string.
+    /// It is recommended that it's handlers be very quick,
+    /// and launch a separate event, if long-running work
+    /// (like collecting debugging data) is required.
     /// </summary>
     public class UnhandledExceptionEvent : EventBase
     {
@@ -39,9 +42,9 @@ namespace Mechanical4.EventQueue
         /// <summary>
         /// Initializes a new instance of the <see cref="UnhandledExceptionEvent"/> class.
         /// </summary>
-        /// <param name="type"></param>
-        /// <param name="message"></param>
-        /// <param name="asString"></param>
+        /// <param name="type">The exception type.</param>
+        /// <param name="message">The exception message.</param>
+        /// <param name="asString">The serialized exception string.</param>
         public UnhandledExceptionEvent( string type, string message, string asString )
         {
             if( type.NullOrEmpty() )

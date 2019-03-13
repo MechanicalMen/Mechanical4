@@ -1,5 +1,6 @@
 ﻿using System;
 using Mechanical4.EventQueue;
+using Mechanical4.EventQueue.Primitives;
 using NUnit.Framework;
 
 namespace Mechanical4.Tests.EventQueue

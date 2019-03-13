@@ -4,6 +4,8 @@ using System.Threading;
 
 namespace Mechanical4.EventQueue
 {
+    using EventHandledDelegate = Action<EventBase>;
+
     /// <summary>
     /// Blocking versions of <see cref="IEventQueue.Enqueue"/>.
     /// </summary>
@@ -31,15 +33,15 @@ namespace Mechanical4.EventQueue
 
         private class FinishedEventHandler : IEventHandler<FinishedEvent>
         {
-            private readonly Action<EventBase> action;
+            private readonly EventHandledDelegate handler;
             private readonly IEventQueue queue;
             private readonly int index;
 
-            public FinishedEventHandler( IEventQueue eventQueue, int eventIndex, Action<EventBase> onHandled )
+            public FinishedEventHandler( IEventQueue eventQueue, int eventIndex, EventHandledDelegate onHandled )
             {
                 this.queue = eventQueue ?? throw Exc.Null(nameof(eventQueue));
                 this.index = eventIndex;
-                this.action = onHandled ?? throw Exc.Null(nameof(onHandled));
+                this.handler = onHandled ?? throw Exc.Null(nameof(onHandled));
             }
 
             public void Handle( FinishedEvent evnt )
@@ -47,7 +49,7 @@ namespace Mechanical4.EventQueue
                 if( evnt.Index == this.index )
                 {
                     this.queue.Subscribers.Remove(this);
-                    this.action(evnt.OriginalEvent);
+                    this.handler(evnt.OriginalEvent);
                 }
             }
         }
@@ -72,7 +74,7 @@ namespace Mechanical4.EventQueue
         public static bool Enqueue(
             this IEventQueue eventQueue,
             EventBase evnt,
-            Action<EventBase> onHandled,
+            EventHandledDelegate onHandled,
             [CallerFilePath] string file = "",
             [CallerMemberName] string member = "",
             [CallerLineNumber] int line = 0 )

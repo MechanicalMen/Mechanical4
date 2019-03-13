@@ -1,4 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
+using Mechanical4.EventQueue.Primitives;
 
 namespace Mechanical4.EventQueue
 {
@@ -34,19 +35,19 @@ namespace Mechanical4.EventQueue
         /// Does not affect event handling already in progress.
         /// Does not affect the addition of events to the queue (i.e. <see cref="Enqueue"/>).
         /// </summary>
-        FeatureSuspender EventHandling { get; }
+        EventQueueFeature EventHandling { get; }
 
         /// <summary>
         /// Gets the object managing whether events are silently discarded, instead of being added to the queue.
         /// This affects neither events already in the queue, nor their handling.
         /// </summary>
-        FeatureSuspender EventAdding { get; }
+        EventQueueFeature EventAdding { get; }
 
         /// <summary>
         /// Gets the object managing whether exceptions thrown by event handlers
         /// are wrapped and raised as <see cref="UnhandledExceptionEvent"/>.
         /// <see cref="EventAdding"/> must be enabled for this to work.
         /// </summary>
-        FeatureSuspender RaiseUnhandledEvents { get; }
+        EventQueueFeature RaiseUnhandledEvents { get; }
     }
 }

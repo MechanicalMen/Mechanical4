@@ -5,7 +5,7 @@ using System.Threading;
 namespace Mechanical4.Misc
 {
     /// <summary>
-    /// Mimics a <see cref="Boolean"/> variable, in a thread-safe manner.
+    /// Provides thread-safe access to an &quot;enum&quot; variable.
     /// </summary>
     public class ThreadSafeEnum<T>
         where T : System.Enum

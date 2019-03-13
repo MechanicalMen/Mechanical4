@@ -1,18 +1,19 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Mechanical4.EventQueue.Primitives;
 
 namespace Mechanical4.EventQueue
 {
     /// <summary>
     /// Uses a long running task to execute event handlers as events become available.
     /// </summary>
-    public class TaskEventQueue : IEventQueue
+    public class TaskEventQueue : EventQueueBase
     {
         #region Private Fields
 
-        private readonly ManualEventQueue manualQueue;
-        private readonly ManualResetEventSlim newEventWaitHandle;
+        private readonly ManualResetEventSlim eventAvailableWaitHandle;
 
         #endregion
 
@@ -21,13 +22,11 @@ namespace Mechanical4.EventQueue
         /// <summary>
         /// Initializes a new instance of the <see cref="TaskEventQueue"/> class.
         /// </summary>
-        public TaskEventQueue()
+        /// <param name="eventStorage">The <see cref="IEventQueueStorage"/> to use, or <c>null</c> to use a <see cref="FIFOEventStorage"/>.</param>
+        public TaskEventQueue( IEventQueueStorage eventStorage = null )
+            : base(eventStorage, subscriberCollection: null)
         {
-            this.manualQueue = new ManualEventQueue();
-            this.newEventWaitHandle = new ManualResetEventSlim(initialState: false); // nonsignaled, blocks
-            this.EventHandling = new FeatureSuspender(
-                onSuspended: this.SuspendTask,
-                onResumed: this.ResumeTask);
+            this.eventAvailableWaitHandle = new ManualResetEventSlim(initialState: false); // nonsignaled, blocks
             this.Task = Task.Factory.StartNew(this.Work, TaskCreationOptions.LongRunning);
         }
 
@@ -37,78 +36,56 @@ namespace Mechanical4.EventQueue
 
         private void Work()
         {
+            var exceptions = new List<Exception>();
             while( true )
             {
                 // wait for the next Enqueue call
-                this.newEventWaitHandle.Wait(); // wait indefinitely for events to be added
+                this.eventAvailableWaitHandle.Wait(); // wait indefinitely for events to be added
                 this.SuspendTask(); // wait again after we handled all available events
 
                 // handle all that we can
-                while( this.manualQueue.HandleNext() ) ;
+                while( this.TryHandleNextEvent(out _) ) ;
 
                 // finish if shut down
-                if( this.manualQueue.IsShutDown )
+                if( this.IsShutDown )
                     break;
             }
         }
 
-        private void SuspendTask() => this.newEventWaitHandle.Reset(); // nonsignaled, blocks
-        private void ResumeTask() => this.newEventWaitHandle.Set(); // signaled, does not block
+        private void SuspendTask() => this.eventAvailableWaitHandle.Reset(); // nonsignaled, blocks
+        private void ResumeTask() => this.eventAvailableWaitHandle.Set(); // signaled, does not block
 
         #endregion
 
-        #region IEventQueue
+        #region EventQueueBase
 
         /// <summary>
-        /// Enqueues an event, to be handled by subscribers sometime later.
-        /// There is no guarantee that the event will end up being handled
-        /// (e.g. suspended or shut down queues silently ignore events,
-        /// or the application may be terminated beforehand).
+        /// Invoked after the event was successfully added to the <see cref="IEventQueueStorage"/>.
         /// </summary>
-        /// <param name="evnt">The event to enqueue.</param>
-        /// <param name="file">The source file of the caller.</param>
-        /// <param name="member">The method or property name of the caller to this method.</param>
-        /// <param name="line">The line number in <paramref name="file"/>.</param>
-        /// <returns><c>true</c> if the event was enqueued successfully; otherwise, <c>false</c>.</returns>
-        public bool Enqueue(
-            EventBase evnt,
-            [CallerFilePath] string file = "",
-            [CallerMemberName] string member = "",
-            [CallerLineNumber] int line = 0 )
+        /// <param name="evnt">The event that was added.</param>
+        protected override void AfterAdding( EventBase evnt )
         {
-            var eventAdded = this.manualQueue.Enqueue(evnt, file, member, line);
-
-            if( eventAdded
-             && this.EventHandling.IsEnabled )
+            if( this.EventHandling.IsEnabled )
                 this.ResumeTask();
-
-            return eventAdded;
         }
 
         /// <summary>
-        /// Gets the collection of event handlers.
+        /// Invoked when the queue is suspended.
         /// </summary>
-        public EventSubscriberCollection Subscribers => this.manualQueue.Subscribers;
+        protected override void OnHandlingSuspended()
+        {
+            this.SuspendTask();
+            base.OnHandlingSuspended();
+        }
 
         /// <summary>
-        /// Gets the object managing whether the handling of events already in the queue can be started.
-        /// Does not affect event handling already in progress.
-        /// Does not affect the addition of events to the queue (i.e. <see cref="Enqueue"/>).
+        /// Invoked when the queue is resumed.
         /// </summary>
-        public FeatureSuspender EventHandling { get; }
-
-        /// <summary>
-        /// Gets the object managing whether events are silently discarded, instead of being added to the queue.
-        /// This affects neither events already in the queue, nor their handling.
-        /// </summary>
-        public FeatureSuspender EventAdding => this.manualQueue.EventAdding;
-
-        /// <summary>
-        /// Gets the object managing whether exceptions thrown by event handlers
-        /// are wrapped and raised as <see cref="UnhandledExceptionEvent"/>.
-        /// <see cref="EventAdding"/> must be enabled for this to work.
-        /// </summary>
-        public FeatureSuspender RaiseUnhandledEvents => this.manualQueue.RaiseUnhandledEvents;
+        protected override void OnHandlingResumed()
+        {
+            base.OnHandlingResumed();
+            this.ResumeTask();
+        }
 
         #endregion
 
