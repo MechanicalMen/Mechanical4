@@ -197,7 +197,7 @@ namespace Mechanical4.EventQueue
                 if( evnt is ShutdownRequestEvent )
                 {
                     if( this.shutdownRequestEnqueued // another request is already enqueued or being handled
-                     || ((int)this.eventsState >= (int)State.ShuttingDownEnqueued) ) // we are already shutting down, there is no question about it
+                     || (this.eventsState >= State.ShuttingDownEnqueued) ) // we are already shutting down, there is no question about it
                     {
                         canAdd = false;
                         return;
@@ -209,7 +209,7 @@ namespace Mechanical4.EventQueue
                 }
                 else if( evnt is ShuttingDownEvent ) // shutting down event?
                 {
-                    if( (int)this.eventsState >= (int)State.ShuttingDownEnqueued )
+                    if( this.eventsState >= State.ShuttingDownEnqueued )
                     {
                         // another shutting down event already enqueued
                         canAdd = false;
@@ -248,7 +248,7 @@ namespace Mechanical4.EventQueue
             lock( this.syncLock )
             {
                 // skip handling shutdown requests, if a shutting down event was already enqueued
-                if( (int)this.eventsState >= (int)State.ShuttingDownEnqueued
+                if( this.eventsState >= State.ShuttingDownEnqueued
                  && evnt is ShutdownRequestEvent )
                 {
                     // there was an event found, and event handling was not suspended.
