@@ -52,7 +52,10 @@ namespace Mechanical4.Tests.MVVM
             AppStateChangedEvent.Critical criticalEvent = null;
             app.MainEventQueue.Subscribers.Add(
                 DelegateEventHandler.On<AppStateChangedEvent.Critical>(
-                    e => criticalEvent = e));
+                    e =>
+                    {
+                        criticalEvent = e;
+                    }));
 
             // immediately changes state, using a critical event
             app.MoveToState(AppState.Suspended);
