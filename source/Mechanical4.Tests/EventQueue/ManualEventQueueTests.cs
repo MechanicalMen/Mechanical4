@@ -115,8 +115,9 @@ namespace Mechanical4.Tests.EventQueue
             Assert.True(queue.HandleNext());
             Assert.IsInstanceOf<NamedEvent>(testListener.LastEventHandled); // false for null
 
-            // handle hidden shut down event
-            Assert.True(queue.HandleNext());
+            // handle shut down event
+            Assert.True(queue.HandleNext(out var shutDownEvent));
+            Assert.IsInstanceOf<ShutDownEvent>(shutDownEvent);
 
             // nothing more to handle
             Assert.True(queue.IsShutDown);
@@ -150,7 +151,7 @@ namespace Mechanical4.Tests.EventQueue
             Assert.True(queue.HandleNext());
             Assert.False(queue.IsShutDown);
 
-            // ... but handling the hidden ShutDownEvent is
+            // ... but handling the ShutDownEvent is
             Assert.True(queue.HandleNext());
             Assert.True(queue.IsShutDown);
             Assert.False(queue.HandleNext());

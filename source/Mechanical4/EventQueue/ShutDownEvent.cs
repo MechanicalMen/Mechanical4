@@ -5,7 +5,7 @@
     /// After this event has been handled, the subscribers are automatically removed,
     /// and no more subscriptions can be registered.
     /// </summary>
-    internal class ShutDownEvent : EventBase
+    public class ShutDownEvent : EventBase
     {
         //// NOTE: this event is deliberately not public, because we do not want users
         ////       to register for this instead of ShuttingDownEvent.
