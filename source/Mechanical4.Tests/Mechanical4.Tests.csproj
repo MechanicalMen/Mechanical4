@@ -52,6 +52,8 @@
     <Compile Include="ExcTests.cs" />
     <Compile Include="DisposableTests.cs" />
     <Compile Include="Misc\CommonStringConverterTests.cs" />
+    <Compile Include="Misc\WeakRefCollectionTests.cs" />
+    <Compile Include="Misc\ReferenceEqualityComparerTests.cs" />
     <Compile Include="Misc\FileLineTests.cs" />
     <Compile Include="EventQueue\CallbackEnqueueExtensionTests.cs" />
     <Compile Include="EventQueue\EventQueueFeatureTests.cs" />
