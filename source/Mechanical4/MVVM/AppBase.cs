@@ -18,7 +18,6 @@ namespace Mechanical4.MVVM
         protected AppBase( EventQueueBase eventQueue )
         {
             this.MainEventQueue = new MainEventQueue(eventQueue);
-            this.MainEventQueue.Subscribers.AddAll(this, weakRef: false); // if there is one object that needs to stay around, it's this one.
 
             this.InitializeUnhandledExceptionCatching();
         }
