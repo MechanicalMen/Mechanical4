@@ -11,25 +11,30 @@ namespace Mechanical4.Windows.MVVM
     /// </summary>
     public abstract class WindowsAppBase : AppBase
     {
+        #region Initialization
+
         /// <summary>
-        /// Initializes a new instance of the <see cref="WindowsAppBase"/> class.
+        /// Initializes the (Mechanical4) app.
         /// </summary>
         /// <param name="eventQueue">The <see cref="EventQueueBase"/> to wrap.</param>
-        protected WindowsAppBase( EventQueueBase eventQueue )
-            : base(eventQueue)
+        protected static new void Initialize( EventQueueBase eventQueue )
         {
-            this.InitializeUnhandledExceptionCatching();
-            this.InitializeSystemEvents();
+            AppBase.Initialize(eventQueue);
+
+            InitializeUnhandledExceptionCatching();
+            InitializeSystemEvents();
         }
+
+        #endregion
 
         #region AppDomain unhandled exceptions
 
-        private void InitializeUnhandledExceptionCatching()
+        private static void InitializeUnhandledExceptionCatching()
         {
-            AppDomain.CurrentDomain.UnhandledException += this.OnAppDomainUnhandledException;
+            AppDomain.CurrentDomain.UnhandledException += OnAppDomainUnhandledException;
         }
 
-        private void OnAppDomainUnhandledException( object sender, UnhandledExceptionEventArgs e )
+        private static void OnAppDomainUnhandledException( object sender, UnhandledExceptionEventArgs e )
         {
             if( !(e.ExceptionObject is Exception exception) )
             {
@@ -40,20 +45,20 @@ namespace Mechanical4.Windows.MVVM
             if( e.IsTerminating )
             {
                 // save critical work first, hopefully handle regular events afterwards
-                this.MainEventQueue.EventHandling.Suspend();
+                MainEventQueue.EventHandling.Suspend();
                 try
                 {
-                    this.MainEventQueue.EnqueueRegular(new CriticalUnhandledExceptionEvent(exception));
-                    this.MoveToState(AppState.Shutdown);
+                    MainEventQueue.HandleCritical(new CriticalUnhandledExceptionEvent(exception));
+                    MoveToState(AppState.Shutdown);
                 }
                 finally
                 {
-                    this.MainEventQueue.EventHandling.Resume();
+                    MainEventQueue.EventHandling.Resume();
                 }
             }
             else
             {
-                this.MainEventQueue.EnqueueRegular(new UnhandledExceptionEvent(exception));
+                EnqueueException(exception);
             }
         }
 
@@ -98,63 +103,63 @@ namespace Mechanical4.Windows.MVVM
          *  - SessionSwitch (Reason: ConsoleConnect)
          */
 
-        private readonly ThreadSafeEnum<AppState> stateBeforeLeaving = new ThreadSafeEnum<AppState>();
-        private AppState StateBeforeLeaving
+        private static readonly ThreadSafeEnum<AppState> stateBeforeLeaving = new ThreadSafeEnum<AppState>();
+        private static AppState StateBeforeLeaving
         {
-            get => this.stateBeforeLeaving.GetCopy();
-            set => this.stateBeforeLeaving.Set(value);
+            get => stateBeforeLeaving.GetCopy();
+            set => stateBeforeLeaving.Set(value);
         }
 
-        private void Suspend()
+        private static void Suspend()
         {
-            this.StateBeforeLeaving = this.CurrentState;
-            this.MoveToState(AppState.Suspended);
+            StateBeforeLeaving = CurrentState;
+            MoveToState(AppState.Suspended);
         }
 
-        private void Resume()
+        private static void Resume()
         {
-            this.MoveToState(this.StateBeforeLeaving);
+            MoveToState(StateBeforeLeaving);
         }
 
-        private void InitializeSystemEvents()
+        private static void InitializeSystemEvents()
         {
-            SystemEvents.SessionEnded += this.OnSessionEnded;
-            SystemEvents.SessionSwitch += this.OnSessionSwitch;
-            SystemEvents.PowerModeChanged += this.OnPowerModeChanged;
+            SystemEvents.SessionEnded += OnSessionEnded;
+            SystemEvents.SessionSwitch += OnSessionSwitch;
+            SystemEvents.PowerModeChanged += OnPowerModeChanged;
         }
 
-        private void OnSessionEnded( object sender, SessionEndedEventArgs e )
+        private static void OnSessionEnded( object sender, SessionEndedEventArgs e )
         {
             // shutdown, reboot or log off
-            this.MoveToState(AppState.Shutdown);
+            MoveToState(AppState.Shutdown);
         }
 
-        private void OnSessionSwitch( object sender, SessionSwitchEventArgs e )
+        private static void OnSessionSwitch( object sender, SessionSwitchEventArgs e )
         {
             switch( e.Reason )
             {
             case SessionSwitchReason.SessionLock: // lock
             case SessionSwitchReason.ConsoleDisconnect: // switch user
-                this.Suspend();
+                Suspend();
                 break;
 
             case SessionSwitchReason.SessionUnlock: // sign in, after lock
             case SessionSwitchReason.ConsoleConnect: // sign in, after switch user
-                this.Resume();
+                Resume();
                 break;
             }
         }
 
-        private void OnPowerModeChanged( object sender, PowerModeChangedEventArgs e )
+        private static void OnPowerModeChanged( object sender, PowerModeChangedEventArgs e )
         {
             switch( e.Mode )
             {
             case PowerModes.Suspend: // sleep
-                this.Suspend();
+                Suspend();
                 break;
 
             case PowerModes.Resume: // resume from sleep
-                this.Resume();
+                Resume();
                 break;
             }
         }

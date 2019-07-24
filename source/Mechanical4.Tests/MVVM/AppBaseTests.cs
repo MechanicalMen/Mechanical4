@@ -13,77 +13,98 @@ namespace Mechanical4.Tests.MVVM
 
         internal class TestApp : AppBase
         {
-            internal TestApp( EventQueueBase eventQueue )
-                : base(eventQueue)
+            private TestApp()
             {
+            }
+
+            internal static new void Initialize( EventQueueBase eventQueue )
+            {
+                AppBase.Initialize(eventQueue);
             }
         }
 
         #endregion
 
         [Test]
-        public static void Constructor()
+        public static void CombinedTests()
         {
-            var manualQueue = new ManualEventQueue();
-            var app = new TestApp(manualQueue);
+            Constructor(out var manualQueue);
+            ChangeToNonNeighboringState(manualQueue);
+            ChangeToNeighboringState(manualQueue);
+            ChangeToSameState(manualQueue);
 
-            Assert.NotNull(app.MainEventQueue);
-            Assert.AreSame(manualQueue, app.MainEventQueue.BaseEventQueue);
-            Assert.AreSame(manualQueue.Subscribers, app.MainEventQueue.Subscribers);
-            Assert.AreSame(manualQueue.EventAdding, app.MainEventQueue.EventAdding);
-            Assert.AreSame(manualQueue.EventHandling, app.MainEventQueue.EventHandling);
-            Assert.AreSame(manualQueue.RaiseUnhandledEvents, app.MainEventQueue.RaiseUnhandledEvents);
-            Assert.AreEqual(AppState.Shutdown, app.CurrentState);
+            MainEventQueueTests.RegularEventHandlingWorksAsExpected();
+            MainEventQueueTests.CriticalEventsAreHandledImmediately();
+            MainEventQueueTests.RegularAndCriticalEventsMustUseCorrespondingMethod();
+            MainEventQueueTests.CriticalEventHandlingSuspendsRegularEventHandling();
 
-            Assert.Throws<ArgumentNullException>(() => new TestApp(null));
-
-            // try to pass an event queue that's already shut down
-            manualQueue.BeginShutdown();
-            while( manualQueue.HandleNext() ) ;
-            Assert.Throws<ArgumentException>(() => new TestApp(manualQueue));
+            if( (new Random().Next() % 2) == 0 )
+                ShutdownStateEnqueuesShutdownEvent(manualQueue);
+            else
+                ShutdownEventTriggersShutdownState(manualQueue);
         }
 
-        [Test]
-        public static void ChangeToNeighboringState()
+        private static void Constructor( out ManualEventQueue queue )
         {
-            var manualQueue = new ManualEventQueue();
-            var app = new TestApp(manualQueue); // starts in Shutdown state
+            // try to pass a null event queue
+            Assert.Throws<ArgumentNullException>(() => TestApp.Initialize(null));
 
+            // try to pass an event queue that's already shut down
+            var manualQueue = new ManualEventQueue();
+            manualQueue.BeginShutdown();
+            while( manualQueue.HandleNext() ) ;
+            Assert.Throws<ArgumentException>(() => TestApp.Initialize(manualQueue));
+
+            // pass a proper event queue
+            manualQueue = new ManualEventQueue();
+            TestApp.Initialize(manualQueue);
+
+            Assert.NotNull(AppBase.MainEventQueue);
+            Assert.AreSame(manualQueue, AppBase.MainEventQueue.BaseEventQueue);
+            Assert.AreSame(manualQueue.Subscribers, AppBase.MainEventQueue.Subscribers);
+            Assert.AreSame(manualQueue.EventAdding, AppBase.MainEventQueue.EventAdding);
+            Assert.AreSame(manualQueue.EventHandling, AppBase.MainEventQueue.EventHandling);
+            Assert.AreSame(manualQueue.RaiseUnhandledEvents, AppBase.MainEventQueue.RaiseUnhandledEvents);
+            Assert.AreEqual(AppState.Shutdown, AppBase.CurrentState);
+
+            queue = manualQueue;
+        }
+
+        private static void ChangeToNeighboringState( ManualEventQueue manualQueue ) // Running --> Suspended
+        {
             AppStateChangedEvent.Critical criticalEvent = null;
-            app.MainEventQueue.Subscribers.Add(
-                DelegateEventHandler.On<AppStateChangedEvent.Critical>(
-                    e =>
-                    {
-                        criticalEvent = e;
-                    }));
+            var subscriber = DelegateEventHandler.On<AppStateChangedEvent.Critical>(
+                e =>
+                {
+                    criticalEvent = e;
+                });
+            TestApp.MainEventQueue.Subscribers.Add(subscriber);
 
             // immediately changes state, using a critical event
-            app.MoveToState(AppState.Suspended);
-            Assert.AreEqual(AppState.Suspended, app.CurrentState);
+            TestApp.MoveToState(AppState.Suspended);
+            Assert.AreEqual(AppState.Suspended, TestApp.CurrentState);
             Assert.NotNull(criticalEvent);
-            Assert.AreEqual(AppState.Shutdown, criticalEvent.OldState);
+            Assert.AreEqual(AppState.Running, criticalEvent.OldState);
             Assert.AreEqual(AppState.Suspended, criticalEvent.NewState);
 
             // followed by a regular event
             Assert.True(manualQueue.HandleNext(out var evnt));
             var regularEvent = (AppStateChangedEvent.Regular)evnt;
             Assert.AreEqual(AppState.Suspended, regularEvent.CurrentState);
+
+            TestApp.MainEventQueue.Subscribers.Remove(subscriber);
         }
 
-        [Test]
-        public static void ChangeToNonNeighboringState()
+        private static void ChangeToNonNeighboringState( ManualEventQueue manualQueue ) // Shutdown --> Running
         {
-            var manualQueue = new ManualEventQueue();
-            var app = new TestApp(manualQueue); // starts in Shutdown state
-
             var criticalEvents = new List<AppStateChangedEvent.Critical>();
-            app.MainEventQueue.Subscribers.Add(
-                DelegateEventHandler.On<AppStateChangedEvent.Critical>(
-                    e => criticalEvents.Add(e)));
+            var subscriber = DelegateEventHandler.On<AppStateChangedEvent.Critical>(
+                e => criticalEvents.Add(e));
+            TestApp.MainEventQueue.Subscribers.Add(subscriber);
 
             // immediately changes state
-            app.MoveToState(AppState.Running);
-            Assert.AreEqual(AppState.Running, app.CurrentState);
+            TestApp.MoveToState(AppState.Running);
+            Assert.AreEqual(AppState.Running, TestApp.CurrentState);
 
             // critical events already handled
             Assert.AreEqual(2, criticalEvents.Count);
@@ -100,34 +121,49 @@ namespace Mechanical4.Tests.MVVM
             Assert.True(manualQueue.HandleNext(out var evnt));
             var regularEvent = (AppStateChangedEvent.Regular)evnt;
             Assert.AreEqual(AppState.Running, regularEvent.CurrentState);
+
+            TestApp.MainEventQueue.Subscribers.Remove(subscriber);
         }
 
-        [Test]
-        public static void ShutdownStateEnqueuesShutdownEvent()
+        private static void ChangeToSameState( ManualEventQueue manualQueue )
         {
-            var manualQueue = new ManualEventQueue();
-            var app = new TestApp(manualQueue);
-            app.MoveToState(AppState.Running);
+            AppStateChangedEvent.Critical criticalEvent = null;
+            var subscriber = DelegateEventHandler.On<AppStateChangedEvent.Critical>(
+                e =>
+                {
+                    criticalEvent = e;
+                });
+            TestApp.MainEventQueue.Subscribers.Add(subscriber);
+
+            var currentState = TestApp.CurrentState;
+            TestApp.MoveToState(currentState);
+            Assert.AreEqual(currentState, TestApp.CurrentState); // no state change
+            Assert.Null(criticalEvent); // no critical event
+            Assert.False(manualQueue.HandleNext()); // no regular event
+
+            TestApp.MainEventQueue.Subscribers.Remove(subscriber);
+        }
+
+        private static void ShutdownStateEnqueuesShutdownEvent( ManualEventQueue manualQueue )
+        {
+            TestApp.MoveToState(AppState.Running);
             while( manualQueue.HandleNext() ) ;
 
-            app.MoveToState(AppState.Shutdown);
+            TestApp.MoveToState(AppState.Shutdown);
             while( manualQueue.HandleNext() ) ;
             Assert.True(manualQueue.IsShutDown);
-            Assert.AreEqual(AppState.Shutdown, app.CurrentState);
+            Assert.AreEqual(AppState.Shutdown, TestApp.CurrentState);
         }
 
-        [Test]
-        public static void ShutdownEventTriggersShutdownState()
+        private static void ShutdownEventTriggersShutdownState( ManualEventQueue manualQueue )
         {
-            var manualQueue = new ManualEventQueue();
-            var app = new TestApp(manualQueue);
-            app.MoveToState(AppState.Running);
+            TestApp.MoveToState(AppState.Running);
             while( manualQueue.HandleNext() ) ;
 
             manualQueue.BeginShutdown();
             while( manualQueue.HandleNext() ) ;
             Assert.True(manualQueue.IsShutDown);
-            Assert.AreEqual(AppState.Shutdown, app.CurrentState);
+            Assert.AreEqual(AppState.Shutdown, TestApp.CurrentState);
         }
     }
 }

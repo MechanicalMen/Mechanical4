@@ -1,6 +1,5 @@
 ﻿using System;
 using System.ComponentModel;
-using System.Threading;
 using System.Windows;
 using System.Windows.Threading;
 using Mechanical4.EventQueue;
@@ -13,53 +12,34 @@ namespace Mechanical4.Windows.MVVM.WPF
     /// </summary>
     public class WpfApp : WindowsAppBase
     {
-        private static WpfApp instance = null;
+        #region Initialization
 
-        #region Constructor
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="WpfApp"/> class.
-        /// Uses a background thread to handle regular events.
-        /// </summary>
-        public WpfApp()
-            : this(new TaskEventQueue())
+        private WpfApp()
+            : base()
         {
-            // if there is one object that needs to stay around, it's this one.
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="WpfApp"/> class.
+        /// Initializes the (Mechanical4) app.
         /// </summary>
-        /// <param name="eventQueue">The event queue to use for handling regular events. May not be <c>null</c>.</param>
-        public WpfApp( EventQueueBase eventQueue )
-            : base(eventQueue)
+        /// <param name="eventQueue">The <see cref="EventQueueBase"/> to wrap, or <c>null</c> for a new <see cref="TaskEventQueue"/>.</param>
+        public static new void Initialize( EventQueueBase eventQueue = null )
         {
-            if( Interlocked.CompareExchange(ref instance, this, comparand: null).NotNullReference() )
-                throw new InvalidOperationException($"There may be only 1 instance of {nameof(WpfApp)}, at most!");
-        }
-
-        /// <summary>
-        /// Creates a new <see cref="WpfApp"/> instance,
-        /// using a <see cref="TaskEventQueue"/> as the main event queue.
-        /// </summary>
-        /// <returns>A new <see cref="WpfApp"/> instance.</returns>
-        public static WpfApp FromTaskEventQueue()
-        {
-            return new WpfApp(new TaskEventQueue());
+            WindowsAppBase.Initialize(eventQueue ?? new TaskEventQueue());
         }
 
         #endregion
 
         #region UI Dispatcher Exception Handling
 
-        private readonly WeakRefCollection<Dispatcher> dispatchersRaisingUnhandledEvents = new WeakRefCollection<Dispatcher>();
+        private static readonly WeakRefCollection<Dispatcher> dispatchersRaisingUnhandledEvents = new WeakRefCollection<Dispatcher>();
 
         /// <summary>
         /// Enqueues <see cref="UnhandledExceptionEvent"/> for unhandled exceptions thrown on the specified <see cref="Dispatcher"/>.
         /// </summary>
         /// <param name="dispatcher">The dispatcher to catch unhandled exceptions from, or <c>null</c> for the UI dispatcher.</param>
         /// <param name="raiseEvents"><c>true</c> to make sure unhandled exceptions are enqueued; <c>false</c> to make sure they are not.</param>
-        public void RaiseUnhandledExceptionEventsFromDispatcher( Dispatcher dispatcher = null, bool raiseEvents = true )
+        public static void RaiseUnhandledExceptionEventsFromDispatcher( Dispatcher dispatcher = null, bool raiseEvents = true )
         {
             if( dispatcher.NullReference() )
             {
@@ -68,27 +48,27 @@ namespace Mechanical4.Windows.MVVM.WPF
                     throw new InvalidOperationException("Could not determine UI dispatcher! (Application.Current is not available)");
             }
 
-            lock( this.dispatchersRaisingUnhandledEvents )
+            lock( dispatchersRaisingUnhandledEvents )
             {
                 if( raiseEvents )
                 {
-                    if( !this.dispatchersRaisingUnhandledEvents.Contains(dispatcher) )
+                    if( !dispatchersRaisingUnhandledEvents.Contains(dispatcher) )
                     {
-                        this.dispatchersRaisingUnhandledEvents.Add(dispatcher);
+                        dispatchersRaisingUnhandledEvents.Add(dispatcher);
                         dispatcher.UnhandledException += OnDispatcherUnhandledException;
                     }
                 }
                 else
                 {
-                    if( this.dispatchersRaisingUnhandledEvents.Remove(dispatcher) )
+                    if( dispatchersRaisingUnhandledEvents.Remove(dispatcher) )
                         dispatcher.UnhandledException -= OnDispatcherUnhandledException;
                 }
             }
         }
 
-        private void OnDispatcherUnhandledException( object sender, DispatcherUnhandledExceptionEventArgs e )
+        private static void OnDispatcherUnhandledException( object sender, DispatcherUnhandledExceptionEventArgs e )
         {
-            this.MainEventQueue.EnqueueRegular(new UnhandledExceptionEvent(e.Exception));
+            EnqueueException(e.Exception);
             e.Handled = true;
         }
 
@@ -134,7 +114,7 @@ namespace Mechanical4.Windows.MVVM.WPF
                 if( !this.canCloseWindow )
                 {
                     e.Cancel = true;
-                    WpfApp.instance.MainEventQueue.RequestShutdown(); // implicitly enqueues ShuttingDownEvent, if not cancelled
+                    MainEventQueue.RequestShutdown(); // implicitly enqueues ShuttingDownEvent, if not cancelled
                 }
             }
 
@@ -158,13 +138,13 @@ namespace Mechanical4.Windows.MVVM.WPF
         /// and shutting down the main event queue will shut down the window as well.
         /// </summary>
         /// <param name="window">The <see cref="Window"/> to bind to the main event queue.</param>
-        public void BindWindowToAppLifeCycle( Window window )
+        public static void BindWindowToAppLifeCycle( Window window )
         {
             if( window.NullReference() )
-                throw new ArgumentNullException(nameof(window)).StoreFileLine();
+                throw Exc.Null(nameof(window));
 
             var windowCloseHandler = new WindowCloseHandler(window);
-            this.MainEventQueue.Subscribers.Add<ShutDownEvent>(windowCloseHandler, weakRef: false); // a strong ref. for the handler, but a weak ref. for the window
+            MainEventQueue.Subscribers.Add<ShutDownEvent>(windowCloseHandler, weakRef: false); // a strong ref. for the handler, but a weak ref. for the window
         }
 
         #endregion

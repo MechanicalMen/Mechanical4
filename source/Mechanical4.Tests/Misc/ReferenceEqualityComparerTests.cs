@@ -22,7 +22,7 @@ namespace Mechanical4.Tests.Misc
         }
 
         [Test]
-        public static void GetHashCode()
+        public static new void GetHashCode()
         {
             Assert.Throws<NotSupportedException>(() => ReferenceEqualityComparer<string>.Default.GetHashCode(null));
             Assert.Throws<NotSupportedException>(() => ReferenceEqualityComparer<string>.Default.GetHashCode("a"));

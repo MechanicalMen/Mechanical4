@@ -120,6 +120,7 @@ namespace Mechanical4.MVVM
             {
                 lock( this.moveToStateLock ) // only one state change at a time
                 {
+                    bool stateChanged = false;
                     while( true )
                     {
                         // are we done?
@@ -145,14 +146,18 @@ namespace Mechanical4.MVVM
 
                         // update state
                         this.LastStateFinishedHandling = nextState;
+                        stateChanged = true;
                     }
 
-                    // we reached the target state, enqueue a regular event
-                    this.EnqueueRegular(new AppStateChangedEvent.Regular(this));
+                    if( stateChanged )
+                    {
+                        // we reached the target state, enqueue a regular event
+                        this.EnqueueRegular(new AppStateChangedEvent.Regular(this));
 
-                    // if we reached the shutdown state, make sure we begin to shut down the event queue
-                    if( newState == AppState.Shutdown )
-                        this.EnqueueRegular(new ShuttingDownEvent()); // may not get enqueued, if the queue is already shutting down
+                        // if we reached the shutdown state, make sure we begin to shut down the event queue
+                        if( newState == AppState.Shutdown )
+                            this.EnqueueRegular(new ShuttingDownEvent()); // may not get enqueued, if the queue is already shutting down
+                    }
                 }
             }
             finally
