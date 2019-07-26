@@ -62,6 +62,7 @@
   <ItemGroup>
     <Compile Include="MVVM\DispatcherEventQueue.cs" />
     <Compile Include="MVVM\WindowsAppBase.cs" />
+    <Compile Include="MVVM\WPF\DispatcherUIThread.cs" />
     <Compile Include="MVVM\WPF\WpfApp.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

@@ -48,6 +48,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AssemblySetup.cs" />
     <Compile Include="CoreExtensionsTests.cs" />
     <Compile Include="ExcTests.cs" />
     <Compile Include="DisposableTests.cs" />
@@ -64,7 +65,9 @@
     <Compile Include="EventQueue\TestEvent.cs" />
     <Compile Include="EventQueue\TestEventHandler.cs" />
     <Compile Include="MVVM\AppBaseTests.cs" />
+    <Compile Include="MVVM\FakeUIThread.cs" />
     <Compile Include="MVVM\MainEventQueueTests.cs" />
+    <Compile Include="MVVM\PropertyChangedChainTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Test.cs" />
   </ItemGroup>
