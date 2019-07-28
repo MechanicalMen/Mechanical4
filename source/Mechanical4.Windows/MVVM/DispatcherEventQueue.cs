@@ -5,7 +5,7 @@ using Mechanical4.EventQueue;
 using Mechanical4.EventQueue.Primitives;
 using Mechanical4.Misc;
 
-namespace Mechanical4.Windows.MVVM
+namespace Mechanical4.MVVM
 {
     /// <summary>
     /// Uses a <see cref="Dispatcher"/> for event handling.

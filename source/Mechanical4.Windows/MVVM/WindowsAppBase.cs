@@ -1,10 +1,9 @@
 ﻿using System;
 using Mechanical4.EventQueue;
 using Mechanical4.Misc;
-using Mechanical4.MVVM;
 using Microsoft.Win32;
 
-namespace Mechanical4.Windows.MVVM
+namespace Mechanical4.MVVM
 {
     /// <summary>
     /// The base class to use instead of <see cref="AppBase"/>, on Windows.

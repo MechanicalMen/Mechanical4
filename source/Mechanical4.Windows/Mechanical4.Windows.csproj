@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>net472;net461</TargetFrameworks>
     <LangVersion>default</LangVersion>
+    <RootNamespace>Mechanical4</RootNamespace>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net461|AnyCPU'">

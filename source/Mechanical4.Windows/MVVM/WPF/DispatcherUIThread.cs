@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Windows.Threading;
-using Mechanical4.MVVM;
 
-namespace Mechanical4.Windows.MVVM.WPF
+namespace Mechanical4.MVVM.WPF
 {
     /// <summary>
     /// Implements <see cref="IUIThread"/> using a <see cref="Dispatcher"/>.

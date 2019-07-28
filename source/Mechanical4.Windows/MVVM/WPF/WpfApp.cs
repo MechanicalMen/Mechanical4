@@ -4,9 +4,8 @@ using System.Windows;
 using System.Windows.Threading;
 using Mechanical4.EventQueue;
 using Mechanical4.Misc;
-using Mechanical4.MVVM;
 
-namespace Mechanical4.Windows.MVVM.WPF
+namespace Mechanical4.MVVM.WPF
 {
     /// <summary>
     /// Handles common, WPF boilerplate code.
