@@ -6,17 +6,17 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net461|AnyCPU'">
-    <DocumentationFile>$(SolutionDir)Mechanical4.Windows\bin\Debug\net461\Mechanical4.Windows.xml</DocumentationFile>
+    <DocumentationFile>$(ProjectDir)bin\Debug\net461\Mechanical4.Windows.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net461|AnyCPU'">
-    <DocumentationFile>$(SolutionDir)Mechanical4.Windows\bin\Release\net461\Mechanical4.Windows.xml</DocumentationFile>
+    <DocumentationFile>$(ProjectDir)bin\Release\net461\Mechanical4.Windows.xml</DocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net472|AnyCPU'">
-    <DocumentationFile>$(SolutionDir)Mechanical4.Windows\bin\Debug\net472\Mechanical4.Windows.xml</DocumentationFile>
+    <DocumentationFile>$(ProjectDir)bin\Debug\net472\Mechanical4.Windows.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net472|AnyCPU'">
-    <DocumentationFile>$(SolutionDir)Mechanical4.Windows\bin\Release\net472\Mechanical4.Windows.xml</DocumentationFile>
+    <DocumentationFile>$(ProjectDir)bin\Release\net472\Mechanical4.Windows.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,7 +24,7 @@
     <Reference Include="PresentationFramework" />
     <Reference Include="WindowsBase" />
 
-    <ProjectReference Include="$(SolutionDir)Mechanical4\Mechanical4.csproj" />
+    <ProjectReference Include="$(ProjectDir)..\Mechanical4\Mechanical4.csproj" />
 
     <PackageReference Include="System.Memory" Version="4.5.3" />
   </ItemGroup>

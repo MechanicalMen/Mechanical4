@@ -6,17 +6,17 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard1.1|AnyCPU'">
-    <DocumentationFile>$(SolutionDir)Mechanical4\bin\Debug\netstandard1.1\Mechanical4.xml</DocumentationFile>
+    <DocumentationFile>$(ProjectDir)bin\Debug\netstandard1.1\Mechanical4.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netstandard1.1|AnyCPU'">
-    <DocumentationFile>$(SolutionDir)Mechanical4\bin\Release\netstandard1.1\Mechanical4.xml</DocumentationFile>
+    <DocumentationFile>$(ProjectDir)bin\Release\netstandard1.1\Mechanical4.xml</DocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard2.0|AnyCPU'">
-    <DocumentationFile>$(SolutionDir)Mechanical4\bin\Debug\netstandard2.0\Mechanical4.xml</DocumentationFile>
+    <DocumentationFile>$(ProjectDir)bin\Debug\netstandard2.0\Mechanical4.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netstandard2.0|AnyCPU'">
-    <DocumentationFile>$(SolutionDir)Mechanical4\bin\Release\netstandard2.0\Mechanical4.xml</DocumentationFile>
+    <DocumentationFile>$(ProjectDir)bin\Release\netstandard2.0\Mechanical4.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)'=='netstandard1.1'">
